@@ -1,0 +1,11 @@
+.DS_Store
+.local
+*.swp
+
+.zig-cache/
+zig-out/
+/release/
+/debug/
+/build/
+/build-*/
+/docgen_tmp/
