@@ -41,10 +41,63 @@ pub const TgaFormat = enum(u8) {
 
     const Self = @This();
 
+    fn bytesPerPixel(self: Self) u8 {
+        if (self == .fundePixel) {
+            return 4;
+        }
+        return @intFromEnum(self);
+    }
+
     fn bitsPerPixel(self: Self) u8 {
-        return self << 3;
+        return self.bytesPerPixel() << 3;
     }
 };
+
+fn writeRleData(
+    width: u32,
+    height: u32,
+    data: []const u8,
+    format: TgaFormat,
+    w: anytype,
+) !void {
+    const maxRunLen = 128;
+    const bpp = format.bytesPerPixel();
+    const npixels = width * height;
+
+    var currPixel: u64 = 0;
+    while (currPixel < npixels) {
+        const chunkStart = currPixel * bpp;
+        var currByte = currPixel * bpp;
+        var runLen: u8 = 1; // number of same pixels in this run
+        var raw = true; // are we outputing a run?
+        while (currPixel + runLen < npixels and runLen < maxRunLen) {
+            // Is current pixel the same as the next one?
+            var t: u8 = 0;
+            while (t < bpp and data[currByte + t] == data[currByte + t + bpp]) {
+                t += 1;
+            }
+            const neighborSame = t == bpp;
+
+            currByte += bpp;
+            if (runLen == 1) {
+                raw = !neighborSame;
+            }
+
+            if (raw and neighborSame) {
+                runLen -= 1;
+                break;
+            }
+            if (!raw and !neighborSame) {
+                break;
+            }
+            runLen += 1;
+        }
+        currPixel += runLen;
+        try w.writeByte(if (raw) runLen - 1 else runLen + 127);
+        const chunkEnd = chunkStart + if (raw) runLen * bpp else bpp;
+        try w.writeAll(data[chunkStart..chunkEnd]);
+    }
+}
 
 pub fn writeTgaImage(
     width: u32,
@@ -52,46 +105,46 @@ pub fn writeTgaImage(
     data: []const u8,
     format: TgaFormat,
     runLengthEncoding: bool,
-    outPath: []const u8,
-) void {
-    comptime {
-        if (width * height != data.len)
-            @compileError("width and height must make up for all the pixel data");
-    }
+    w: anytype,
+) !void {
+    const header = TgaHeader{
+        .idLength = 0,
+        .colorMapType = 0,
+        .imageType = if (format == .grayscale)
+            (if (runLengthEncoding) 11 else 3)
+        else
+            (if (runLengthEncoding) 10 else 2),
+        .colorMapOrigin = 0,
+        .colorMapLength = 0,
+        .colorMapDepth = 0,
+        .xOrigin = 0,
+        .yOrigin = 0,
+        .width = @intCast(width),
+        .height = @intCast(height),
+        .bitsPerPixel = format.bitsPerPixel(),
+        .imageDescriptor = 0x20, // Origin at top-left
+    };
 
-    const file = try std.fs.openFileAbsolute(outPath, .{});
-    defer file.close();
-    var br = try std.io.bufferedWriter(file);
+    const developerAreaRef = [_]u8{ 0, 0, 0, 0 };
+    const extensionAreaRef = [_]u8{ 0, 0, 0, 0 };
 
-    var header = TgaHeader{};
-    header.bitsPerPixel = format.bitsPerPixel();
-    header.width = width;
-    header.height = height;
-    header.imageType = if (format == .grayscale)
-        if (runLengthEncoding) 11 else 3
-    else if (runLengthEncoding) 10 else 2;
-    header.imageDescriptor = 0x20; // Origin at top-left
+    const footer = [_]u8{ 'T', 'R', 'U', 'E', 'V', 'I', 'S', 'I', 'O', 'N', '-', 'X', 'F', 'I', 'L', 'E', '.', 0 };
 
-    const developerAreaRef = []u8{ 0, 0, 0, 0 };
-    const extensionAreaRef = []u8{ 0, 0, 0, 0 };
-
-    const footer = []u8{ 'T', 'R', 'U', 'E', 'V', 'I', 'S', 'I', 'O', 'N', '-', 'X', 'F', 'I', 'L', 'E', '.', 0 };
-
-    br.write(std.mem.asBytes(header));
+    try w.writeStruct(header);
     if (runLengthEncoding) {
-        // TODO
+        try writeRleData(width, height, data, format, w);
     } else if (format == .fundePixel) {
         for (0..data.len / 4) |i| {
             // Swap RGBA to BGRA
             // i.e. swap R and B
             const off = i * 4;
             const bgra = [_]u8{ data[off + 2], data[off + 1], data[off], data[off + 3] };
-            br.write(bgra);
+            try w.writeAll(&bgra);
         }
     } else {
-        br.write(data);
+        try w.writeAll(data);
     }
-    br.write(developerAreaRef);
-    br.write(extensionAreaRef);
-    br.write(footer);
+    try w.writeAll(&developerAreaRef);
+    try w.writeAll(&extensionAreaRef);
+    try w.writeAll(&footer);
 }
