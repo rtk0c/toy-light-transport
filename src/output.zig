@@ -8,7 +8,7 @@ pub const TgaPixel = extern struct {
     b: u8,
     g: u8,
     r: u8,
-    a: u1,
+    a: u8,
 };
 
 pub const TgaHeader = extern struct {
