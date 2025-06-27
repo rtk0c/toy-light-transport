@@ -1,3 +1,5 @@
+const zl = @import("zalgebra");
+
 pub const Pixel = struct {
     r: u8,
     g: u8,
@@ -6,12 +8,12 @@ pub const Pixel = struct {
 
     const Self = @This();
 
-    pub inline fn nm(self: Self) Vec4 {
+    pub inline fn nm(self: Self) zl.Vec4 {
         return .{
-            .x = @as(f32, @floatFromInt(self.r)) / 255.0,
-            .y = @as(f32, @floatFromInt(self.g)) / 255.0,
-            .z = @as(f32, @floatFromInt(self.b)) / 255.0,
-            .w = @as(f32, @floatFromInt(self.a)) / 255.0,
+            @as(f32, @floatFromInt(self.r)) / 255.0,
+            @as(f32, @floatFromInt(self.g)) / 255.0,
+            @as(f32, @floatFromInt(self.b)) / 255.0,
+            @as(f32, @floatFromInt(self.a)) / 255.0,
         };
     }
 };
