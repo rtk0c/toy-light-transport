@@ -4,28 +4,28 @@ const funde = @import("fundemental.zig");
 // https://en.wikipedia.org/wiki/Truevision_TGA
 
 // Laied out in TGA order
-pub const TgaPixel = packed struct {
+pub const TgaPixel = extern struct {
     b: u8,
     g: u8,
     r: u8,
     a: u1,
 };
 
-pub const TgaHeader = packed struct {
+pub const TgaHeader = extern struct {
     // field 1 - 1 byte
     idLength: u8,
     // field 2 - 1 byte
     colorMapType: u8,
     // field 3 - 5 bytes
     imageType: u8,
-    colorMapOrigin: i16,
-    colorMapLength: i16,
+    colorMapOrigin: i16 align(1),
+    colorMapLength: i16 align(1),
     // field 4 - 11 bytes
     colorMapDepth: u8,
-    xOrigin: i16,
-    yOrigin: i16,
-    width: i16,
-    height: i16,
+    xOrigin: i16 align(1),
+    yOrigin: i16 align(1),
+    width: i16 align(1),
+    height: i16 align(1),
     bitsPerPixel: u8,
     imageDescriptor: u8,
 };
