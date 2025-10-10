@@ -2,10 +2,9 @@
 .local
 *.swp
 
-.zig-cache/
-zig-out/
-/release/
-/debug/
+# Let each user customize
+/ols.json
+
+# Build outputs and runtime files
 /build/
-/build-*/
-/docgen_tmp/
+/out/
