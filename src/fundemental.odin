@@ -1,10 +1,29 @@
 package iacta
 
+import "core:math"
+import LA "core:math/linalg"
+
+solve_quadratic_real :: proc(a, b, c: f32) -> (f32, f32) {
+	discriminant := b * b - 4.0 * a * c
+	if discriminant < 0.0 {
+		NaN := math.nan_f32()
+		return NaN, NaN
+	}
+	root := math.sqrt_f32(discriminant)
+	return (-b + root) / (2.0 * a), (-b - root) / (2.0 * a)
+}
+
+Vec4 :: distinct [4]f32
+Vec3 :: distinct [3]f32
+
 // RGBA
 Pixel :: distinct [4]u8
 
 BLACK_PIXEL :: Pixel{0xFF, 0xFF, 0xFF, 0xFF}
 WHITE_PIXEL :: Pixel{0, 0, 0, 0xFF}
+RED_PIXEL :: Pixel{255, 0, 0, 0xFF}
+GREEN_PIXEL :: Pixel{0, 255, 0, 0xFF}
+BLUE_PIXEL :: Pixel{0, 0, 255, 0xFF}
 
 pixel_denormalize :: proc(v: Vec4) -> Pixel {
 	// Ray Tracing in a Weekend:
@@ -26,4 +45,25 @@ pixel_mul :: proc(p, q: Pixel) -> Vec4 {
 	return a.rgba * b.rgba
 }
 
-Vec4 :: distinct [4]f32
+Camera :: struct {
+	pos:                             Vec3,
+	view:                            Vec3,
+	// Distance from camera center pos to the viewport plane ("near plane" in RT rendering convention)
+	focal_distance:                  f32,
+	// Viewport size in distance unit
+	viewport_width, viewport_height: f32,
+}
+
+make_camera :: proc() -> Camera {
+	return Camera {
+		pos = Vec3{0, 0, 0},
+		view = Vec3{1, 0, 0},
+		focal_distance = 1.0,
+		viewport_width = 1.0,
+		viewport_height = 1.0,
+	}
+}
+
+camera_look_at :: proc(cam: ^Camera, pt: Vec3) {
+	cam.view = LA.normalize(pt - cam.pos)
+}
