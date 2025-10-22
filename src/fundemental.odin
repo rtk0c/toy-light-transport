@@ -1,6 +1,10 @@
 package iacta
 
+// RGBA
 Pixel :: distinct [4]u8
+
+BLACK_PIXEL :: Pixel{0xFF, 0xFF, 0xFF, 0xFF}
+WHITE_PIXEL :: Pixel{0, 0, 0, 0xFF}
 
 pixel_denormalize :: proc(v: Vec4) -> Pixel {
 	u := v * Vec4(255.0)
