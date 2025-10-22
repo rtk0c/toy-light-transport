@@ -2,6 +2,7 @@ package iacta
 
 import "core:fmt"
 import "core:math"
+import "core:math/linalg"
 import stbi "vendor:stb/image"
 
 inverse_only_color :: proc(col: ^Pixel) {
@@ -23,17 +24,21 @@ main :: proc() {
 	sky_color := Pixel{162, 224, 242, 0xFF}
 
 	camera := make_camera()
-	camera.pos = Vec3{-2, 0, 0}
+	camera.pos = Vec3{-2, 0, 1}
 	camera_look_at(&camera, Vec3{0, 0, 0})
 
 	camera.focal_distance = 1.0
 	camera.viewport_height = 1.0
 	camera.viewport_width = camera.viewport_height * ASPECT_RATIO
 
-	// TODO support arbitary camera rotation
-	vp_horz_vec := Vec3{0, camera.viewport_width, 0}
+	// Just get a slightly different vector, on the same vertical plane
+	camera_view_flat := camera.view
+	camera_view_flat.z += 1
+	vp_horz_vec :=
+		linalg.normalize(linalg.cross(camera.view, camera_view_flat)) * camera.viewport_width
 	// Viewport coordiante: TV, aka X right, Y down
-	vp_vert_vec := Vec3{0, 0, -camera.viewport_height}
+	vp_vert_vec :=
+		linalg.normalize(linalg.cross(camera.view, vp_horz_vec)) * camera.viewport_height
 	vp_origin :=
 		camera.pos + camera.view * camera.focal_distance - vp_horz_vec / 2 - vp_vert_vec / 2
 
@@ -45,11 +50,9 @@ main :: proc() {
 		for x in 0 ..< VP_WIDTH {
 			offset := row_offset + x
 
-			pixel_center := vp_origin + pixel_delta_x * (f32(x) + 0.5) + pixel_delta_y * (f32(y) + 0.5)
-			view_ray := Ray {
-				camera.pos,
-				pixel_center - camera.pos,
-			}
+			pixel_center :=
+				vp_origin + pixel_delta_x * (f32(x) + 0.5) + pixel_delta_y * (f32(y) + 0.5)
+			view_ray := Ray{camera.pos, pixel_center - camera.pos}
 
 			t := ray_intersects_sphere(&view_ray, &sphere)
 			if math.is_nan(t) {
