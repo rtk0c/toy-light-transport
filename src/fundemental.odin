@@ -45,6 +45,13 @@ pixel_mul :: proc(p, q: Pixel) -> Vec4 {
 	return a.rgba * b.rgba
 }
 
+colorize_normal_vec :: proc(n: Vec3) -> Pixel {
+	// n: [-1,1] for xyz
+	// r: [0,1] for xyz
+	r := 0.5 * (n + Vec3{1, 1, 1}) //r for remapped
+	return pixel_denormalize(Vec4{r.x, r.y, r.z, 1.0})
+}
+
 Camera :: struct {
 	pos:                             Vec3,
 	view:                            Vec3,

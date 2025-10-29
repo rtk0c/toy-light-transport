@@ -23,7 +23,6 @@ main :: proc() {
 	sphere.center = Vec3{0, 0, 0}
 	sphere.radius = 0.5
 
-	sphere_color := RED_PIXEL
 	sky_color := Pixel{162, 224, 242, 0xFF}
 
 	camera := make_camera()
@@ -61,7 +60,9 @@ main :: proc() {
 			if math.is_nan(t) {
 				data[offset] = sky_color
 			} else {
-				data[offset] = sphere_color
+				intersection_pt := ray_at(&view_ray, t)
+				intersection_normal := surface_normal_at(sphere, intersection_pt)
+				data[offset] = colorize_normal_vec(intersection_normal)
 			}
 		}
 	}
