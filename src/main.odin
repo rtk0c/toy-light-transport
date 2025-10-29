@@ -19,7 +19,10 @@ main :: proc() {
 	COMP :: len(Pixel(0))
 	data := [VP_WIDTH * VP_HEIGHT]Pixel{}
 
-	sphere := Sphere{Vec3{0, 0, 0}, 0.5}
+	sphere := new(Sphere)
+	sphere.center = Vec3{0, 0, 0}
+	sphere.radius = 0.5
+
 	sphere_color := RED_PIXEL
 	sky_color := Pixel{162, 224, 242, 0xFF}
 
@@ -54,7 +57,7 @@ main :: proc() {
 				vp_origin + pixel_delta_x * (f32(x) + 0.5) + pixel_delta_y * (f32(y) + 0.5)
 			view_ray := Ray{camera.pos, pixel_center - camera.pos}
 
-			t := ray_intersects_sphere(&view_ray, &sphere)
+			t := ray_intersects(&view_ray, sphere)
 			if math.is_nan(t) {
 				data[offset] = sky_color
 			} else {

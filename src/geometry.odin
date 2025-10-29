@@ -12,9 +12,26 @@ ray_at :: proc(ray: ^Ray, t: f32) -> Vec3 {
 	return ray.origin + ray.dir * t
 }
 
+SceneObject :: struct {
+	derived: any,
+}
+
+surface_normal_at :: proc {
+	surface_normal_sphere,
+}
+
+ray_intersects :: proc {
+	ray_intersects_sphere,
+}
+
 Sphere :: struct {
-	center: Vec3,
-	radius: f32,
+	using so: SceneObject,
+	center:   Vec3,
+	radius:   f32,
+}
+
+surface_normal_sphere :: proc(sphere: ^Sphere, pt: Vec3) -> Vec3 {
+	return LA.normalize(pt - sphere.center)
 }
 
 ray_intersects_sphere :: proc(ray: ^Ray, sphere: ^Sphere) -> f32 {
