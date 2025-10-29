@@ -33,10 +33,10 @@ main :: proc() {
 
 	// Just get a slightly different vector, on the same vertical plane
 	camera_view_flat := camera.view
-	camera_view_flat.z += 1
+	camera_view_flat.z = -camera_view_flat.z
+	// Viewport coordiante: TV style, aka X right, Y down
 	vp_horz_vec :=
 		linalg.normalize(linalg.cross(camera.view, camera_view_flat)) * camera.viewport_width
-	// Viewport coordiante: TV, aka X right, Y down
 	vp_vert_vec :=
 		linalg.normalize(linalg.cross(camera.view, vp_horz_vec)) * camera.viewport_height
 	vp_origin :=
