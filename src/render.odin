@@ -57,6 +57,9 @@ render :: proc(
 	viewport_width, viewport_height: int,
 	image: []Pixel,
 ) {
+	// In camera-world space, shoot rays and perform intersection tests.
+	// In object space, do radiometry stuff.
+
 	// Dimensions (in world space) of the focal plane
 	fp_width := 2 * cam.focal_length * math.tan(cam.horz_fov / 2)
 	fp_height := fp_width / cam.aspect_ratio
@@ -72,7 +75,7 @@ render :: proc(
 
 	vp_horz := cam_i * fp_width
 	vp_vert := -cam_j * fp_height
-	vp_origin := cam.pos + cam.view * cam.focal_length - vp_horz / 2 - vp_vert / 2
+	vp_origin := cam.view * cam.focal_length - vp_horz / 2 - vp_vert / 2
 
 	pixel_delta_x := vp_horz / f32(viewport_width)
 	pixel_delta_y := vp_vert / f32(viewport_height)
@@ -90,24 +93,39 @@ render :: proc(
 					vp_origin +
 					pixel_delta_x * (f32(x) + sample_x_off) +
 					pixel_delta_y * (f32(y) + sample_y_off)
-				view_ray := Ray{cam.pos, pixel_center - cam.pos}
 
-				closest_hit: ^SceneObject = nil
-				closest_t: f32 = math.inf_f32(+1)
-				for &so in world.scene_objects {
-					t := ray_hits(&view_ray, &so)
-					if !math.is_nan(t) && t < closest_t {
-						closest_hit = &so
-						closest_t = t
+				// In camera-world space
+				view_ray := Ray{Vec3(0), pixel_center}
+
+				closest_hit: int = -1
+				corresponding_t: f32 = math.inf_f32(+1)
+				corresponding_ray_obj_space: Ray
+
+				n_so := len(world.scene_objects)
+				for i in 0 ..< n_so {
+					so := &world.scene_objects[i]
+					wst := world.transforms[i]
+
+					o_ray := ray_tr_CW_to_object(view_ray, cam, wst)
+
+					t := ray_hits(o_ray, so)
+					if !math.is_nan(t) && t < corresponding_t {
+						closest_hit = i
+						corresponding_t = t
+						corresponding_ray_obj_space = o_ray
 					}
 				}
 
-				if closest_hit == nil {
+				if closest_hit == -1 {
 					accum += world.skybox.sky_color
 				} else {
-					hit_pt := ray_at(&view_ray, closest_t)
-					hit_normal := surface_normal_at(closest_hit, hit_pt)
-					accum += material_contribution_at(closest_hit, hit_pt, hit_normal)
+					so := &world.scene_objects[closest_hit]
+					wst := world.transforms[closest_hit]
+
+					// Also in object space
+					hit_pt := ray_at(corresponding_ray_obj_space, corresponding_t)
+					hit_normal := surface_normal_at(so, hit_pt)
+					accum += material_contribution_at(so, hit_pt, hit_normal)
 				}
 			}
 

@@ -21,26 +21,32 @@ main :: proc() {
 
 	camera := make_camera()
 	camera.pos = Vec3{-3, -3, 2}
-	camera.horz_fov = 70.0 / 180 * math.PI
+	camera.horz_fov = 70.0 * math.RAD_PER_DEG
 	camera.aspect_ratio = image_aspect_ratio
 	camera_look_at(&camera, Vec3{0, 0, 0})
 
 	world := make_world()
 	world.skybox.sky_color = pixel_normalize(Pixel{162, 224, 242, 0xFF})
-	add_obj :: proc(world: ^World, s: $T) {
-		append(&world.scene_objects, SceneObject{shape = s, material = NormalDebugMaterial{}})
+
+	add_obj :: proc(world: ^World, pos: Vec3, s: $T) {
+		append(&world.scene_objects, s)
+		append(&world.transforms, Transform{pos = pos})
 	}
-	add_obj(world, Sphere{center = Vec3{0, 0, 0.5}, radius = 0.5})
-	add_obj(world, Sphere{center = Vec3{0, 1, 0.5}, radius = 0.5})
-	add_obj(world, Sphere{center = Vec3{0, -1, 0.5}, radius = 0.5})
-	append(
-		&world.scene_objects,
+	add_obj(
+		world,
+		Vec3{0, 0, -50},
 		SceneObject {
-			shape = Sphere{center = Vec3{0, 0, -50}, radius = 50},
+			shape = Sphere{radius = 50},
 			material = PureColorMaterial{color = pixel_normalize(RED_PIXEL)},
 		},
 	)
 
+	add_obj_s :: proc(world: ^World, pos: Vec3, s: $T) {
+		add_obj(world, pos, SceneObject{shape = s, material = NormalDebugMaterial{}})
+	}
+	add_obj_s(world, Vec3{0, 0, 0.5}, Sphere{radius = 0.5})
+	add_obj_s(world, Vec3{0, 1, 0.5}, Sphere{radius = 0.5})
+	add_obj_s(world, Vec3{0, -1, 0.5}, Sphere{radius = 0.5})
 
 	image := make([dynamic]Pixel, image_width * image_height)
 	render(
