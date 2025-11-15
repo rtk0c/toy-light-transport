@@ -1,8 +1,6 @@
 package iacta
 
-import "core:fmt"
 import "core:math"
-import "core:math/linalg"
 import "core:math/rand"
 import stbi "vendor:stb/image"
 
@@ -16,15 +14,15 @@ main :: proc() {
 	// Use fixed RNG seed for reproducible rendering results
 	rand.reset(0x531864e09a8e25d6)
 
-	IMAGE_WIDTH :: 1024
-	IMAGE_HEIGHT :: 720
-	IAMGE_ASPECT_RATIO :: f32(IMAGE_WIDTH) / f32(IMAGE_HEIGHT)
-	COMP :: len(Pixel(0))
+	// TODO controllable from cli arg
+	image_width := 160
+	image_height := 90
+	image_aspect_ratio := f32(image_width) / f32(image_height)
 
 	camera := make_camera()
 	camera.pos = Vec3{-3, -3, 2}
 	camera.horz_fov = 70.0 / 180 * math.PI
-	camera.aspect_ratio = IAMGE_ASPECT_RATIO
+	camera.aspect_ratio = image_aspect_ratio
 	camera_look_at(&camera, Vec3{0, 0, 0})
 
 	world := make_world()
@@ -44,36 +42,22 @@ main :: proc() {
 	)
 
 
-	image := make([dynamic]Pixel, IMAGE_WIDTH * IMAGE_HEIGHT)
-	if false
-	{
-		render(
-			&camera,
-			world,
-			samples_per_pixel = 16,
-			viewport_width = IMAGE_WIDTH,
-			viewport_height = IMAGE_HEIGHT,
-			image = image[:],
-		)
+	image := make([dynamic]Pixel, image_width * image_height)
+	render(
+		&camera,
+		world,
+		samples_per_pixel = 16,
+		viewport_width = image_width,
+		viewport_height = image_height,
+		image = image[:],
+	)
 
-		stbi.write_png(
-			"./out/output.png",
-			IMAGE_WIDTH,
-			IMAGE_HEIGHT,
-			COMP,
-			&image[0],
-			size_of(image[0]) * IMAGE_WIDTH,
-		)
-	}
-	else
-	{
-		render_gpu(
-			&camera,
-			world,
-			samples_per_pixel = 16,
-			viewport_width = IMAGE_WIDTH,
-			viewport_height = IMAGE_HEIGHT,
-			image = image[:],
-		)
-	}
+	stbi.write_png(
+		"./out/output.png",
+		i32(image_width),
+		i32(image_height),
+		len(Pixel(0)),
+		&image[0],
+		i32(size_of(image[0]) * image_width),
+	)
 }

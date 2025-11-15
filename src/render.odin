@@ -49,12 +49,12 @@ PureColorMaterial :: struct {
 render :: proc(
 	cam: ^Camera,
 	world: ^World,
-	samples_per_pixel: i32,
+	samples_per_pixel: int,
 
 	// Dimension of the rendered image, in pixels.
 	// Aspect ratio `f32(viewport_width) / f32(viewport_height)` should match the `Camera.aspect_ratio` used for rendering.
 	// `viewport_width * viewport_height` should match length of `image`.
-	viewport_width, viewport_height: i32,
+	viewport_width, viewport_height: int,
 	image: []Pixel,
 ) {
 	// Dimensions (in world space) of the focal plane

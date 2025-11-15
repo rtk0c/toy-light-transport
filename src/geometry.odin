@@ -1,7 +1,7 @@
 package iacta
 
 import "core:math"
-import LA "core:math/linalg"
+import "core:math/linalg"
 
 Ray :: struct {
 	origin: Vec3,
@@ -57,16 +57,16 @@ Sphere :: struct {
 }
 
 sphere_surface_normal_at :: proc(sphere: ^Sphere, pt: Vec3) -> Vec3 {
-	return LA.normalize(pt - sphere.center)
+	return linalg.normalize(pt - sphere.center)
 }
 
 sphere_ray_hits :: proc(ray: ^Ray, sphere: ^Sphere) -> f32 {
 	dp := sphere.center - ray.origin // displacement vector from ray origin to sphere center
 	r := sphere.radius
 
-	a := LA.dot(ray.dir, ray.dir)
-	b := -2 * LA.dot(ray.dir, dp)
-	c := LA.dot(dp, dp) - r * r
+	a := linalg.dot(ray.dir, ray.dir)
+	b := -2 * linalg.dot(ray.dir, dp)
+	c := linalg.dot(dp, dp) - r * r
 	r1, _ := solve_quadratic_real(a, b, c)
 	// Doesn't hit
 	if math.is_nan(r1) {
