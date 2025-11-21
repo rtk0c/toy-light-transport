@@ -11,6 +11,7 @@
 
 package iacta
 
+import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 
@@ -27,16 +28,21 @@ tr_object_to_world :: proc(v: Vec3, wst: Transform) -> Vec3 {
 }
 
 tr_CW_to_object :: proc(v: Vec3, cam: ^Camera, wst: Transform) -> Vec3 {
-	// IMPORTANT to not compute this as `((v - cam.pos) + wst.pos)`.
+	// IMPORTANT to not compute this as `((v + cam.pos) - wst.pos)`.
 	// The whole point of doing rendering in camera-world space is to give most of the IEEE-754 precision to objects closer to the camera.
-	// If that had been done, when both the camera and the object are really far from origin of world space, the `(v - cam.pos)` step already destroys most the precision in `v`, because `cam.pos` is a big number.
+	// If that had been done, when both the camera and the object are really far from origin of world space, the `(v + cam.pos)` step already destroys most the precision in `v`, because `cam.pos` is a big number.
 	// But by precomputing the cumulative offset, because both `cam.pos` and `wst.pos` are big numbers, `cum_offset` will be a small number. Then `v + cum_offset` will be a small number plus another small number, keeping most of the precision.
-	cum_offset := -cam.pos + wst.pos
+	cum_offset := -wst.pos + cam.pos
 	return v + cum_offset
 }
 
 tr_object_to_CW :: proc(v: Vec3, cam: ^Camera, wst: Transform) -> Vec3 {
-	cum_offset := cam.pos - wst.pos
+	// # object -> world
+	// We want (0,0) in object to map to `wst.pos` in world, so `v + wst.pos`
+	//
+	// # world -> camera-world
+	// We want `camera.pos` in world to map to (0,0) in world, so `... - camera.pos`
+	cum_offset := wst.pos - cam.pos
 	return v + cum_offset
 }
 
@@ -121,12 +127,14 @@ sphere_surface_normal_at :: proc(sphere: ^Sphere, pt: Vec3) -> Vec3 {
 }
 
 sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> f32 {
-	dp := -ray.origin // displacement vector from ray origin to sphere center
+	ro := ray.origin
+	rd := ray.dir
+
 	r := sphere.radius
 
-	a := linalg.dot(ray.dir, ray.dir)
-	b := -2 * linalg.dot(ray.dir, dp)
-	c := linalg.dot(dp, dp) - r * r
+	a := linalg.dot(rd, rd)
+	b := 2 * linalg.dot(rd, ro)
+	c := linalg.dot(ro, ro) - r * r
 	r1, _ := solve_quadratic_real(a, b, c)
 	// Doesn't hit
 	if math.is_nan(r1) {
