@@ -97,7 +97,7 @@ surface_normal_at :: proc(so: ^SceneObject, pos: Vec3) -> Vec3 {
 }
 
 // Position in object space.
-material_contribution_at :: proc(so: ^SceneObject, pos, normal: Vec3) -> Vec4 {
+material_contribution_at :: proc(so: ^SceneObject, pos, normal: Vec3) -> Color {
 	switch &material in so.material {
 	case NormalDebugMaterial:
 		return colorize_normal_vec(normal)
@@ -105,7 +105,7 @@ material_contribution_at :: proc(so: ^SceneObject, pos, normal: Vec3) -> Vec4 {
 		return material.color
 	}
 
-	return Vec4{}
+	return Color{}
 }
 
 // Ray in object space.
@@ -145,7 +145,7 @@ sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> f32 {
 }
 
 SkyBox :: struct {
-	sky_color: Vec4,
+	sky_color: Color,
 }
 
 World :: struct {

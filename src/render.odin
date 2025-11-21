@@ -43,7 +43,7 @@ camera_look_at :: proc(cam: ^Camera, pt: Vec3) {
 NormalDebugMaterial :: struct {}
 
 PureColorMaterial :: struct {
-	color: Vec4,
+	color: Color,
 }
 
 render :: proc(
@@ -84,7 +84,7 @@ render :: proc(
 
 	for y in 0 ..< viewport_height {
 		for x in 0 ..< viewport_width {
-			accum := Vec4{}
+			accum := Color{}
 			for _ in 0 ..< samples_per_pixel {
 				sample_x_off := rand.float32_uniform(0, 1)
 				sample_y_off := rand.float32_uniform(0, 1)
