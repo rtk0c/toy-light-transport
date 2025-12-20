@@ -46,6 +46,86 @@ PureColorMaterial :: struct {
 	color: Color,
 }
 
+Intersection :: struct {
+	// Which object did we hit?
+	obj_id: int,
+	// Where is the intersection, as parameter t along the ray \( P(t) = x_0 + dt \)? (The ray used to generated this intersection.)
+	// Note that t is independent of the corredinate system, i.e. stays the same whether the ray is represented in camera-world space or object space.
+	t:      f32,
+	// Where is the intersection, in view-world space?
+	pt:     Vec3,
+	// Surface normal at the
+	normal: Vec3,
+}
+
+isect_empty :: proc(isect: Intersection) -> bool {
+	return isect.obj_id == -1
+}
+
+// Generate new ray, relative to the tip of surface normal at intersection.
+// Returned Ray in camera-world space.
+isect_spawn_ray :: proc(isect: Intersection, v: Vec3) -> Ray {
+	return Ray{origin = isect.pt, dir = isect.normal + v}
+}
+
+intersect :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Intersection {
+	isect := Intersection{}
+	isect.obj_id = -1
+	isect.t = math.inf_f32(+1)
+
+	for i in 0 ..< len(world.scene_objects) {
+		so := &world.scene_objects[i]
+		wst := world.transforms[i]
+
+		ray_obj_space := ray_tr_CW_to_object(ray, cam, wst)
+		// ray-object hit test happens in object space, because it's easier to treat in the geometry code
+		t := ray_hits(ray_obj_space, so)
+
+		if !math.is_nan(t) && t < isect.t {
+			isect.obj_id = i
+			isect.t = t
+			// But now, we care about the camera-world space intersection point, so calculate it on the original ray.
+			isect.pt = ray_at(ray, t)
+		}
+	}
+
+	return isect
+}
+
+MAX_BOUNCES :: 50
+
+integrate_camera_ray :: proc(
+	cam: ^Camera,
+	world: ^World,
+	camera_ray: Ray,
+	num_bounces: int = 0,
+) -> Color {
+	isect := intersect(cam, world, camera_ray)
+	if isect_empty(isect) {
+		return world.skybox.sky_color
+	}
+
+	so := &world.scene_objects[isect.obj_id]
+	wst := world.transforms[isect.obj_id]
+
+	// Also in object space
+	hit_pt := tr_CW_to_object(isect.pt, cam, wst)
+	hit_normal := surface_normal_at(so, hit_pt)
+	light_emitted := material_contribution_at(so, hit_pt, hit_normal)
+
+	// At recursion limit, just return current contribution
+	if num_bounces > MAX_BOUNCES {
+		return light_emitted
+	}
+
+	// Otherwise, continue to next bounce
+	next_ray := isect_spawn_ray(isect, rand_pt_in_sphere())
+	fcos := f32(0.5) // TODO
+	light_scattered := fcos * integrate_camera_ray(cam, world, next_ray, num_bounces + 1)
+
+	return light_emitted + light_scattered
+}
+
 render :: proc(
 	cam: ^Camera,
 	world: ^World,
@@ -95,38 +175,9 @@ render :: proc(
 					pixel_delta_y * (f32(y) + sample_y_off)
 
 				// In camera-world space
-				view_ray := Ray{Vec3(0), pixel_center}
+				ray := Ray{Vec3(0), pixel_center}
 
-				closest_hit: int = -1
-				corresponding_t: f32 = math.inf_f32(+1)
-				corresponding_ray_obj_space: Ray
-
-				n_so := len(world.scene_objects)
-				for i in 0 ..< n_so {
-					so := &world.scene_objects[i]
-					wst := world.transforms[i]
-
-					o_ray := ray_tr_CW_to_object(view_ray, cam, wst)
-
-					t := ray_hits(o_ray, so)
-					if !math.is_nan(t) && t < corresponding_t {
-						closest_hit = i
-						corresponding_t = t
-						corresponding_ray_obj_space = o_ray
-					}
-				}
-
-				if closest_hit == -1 {
-					accum += world.skybox.sky_color
-				} else {
-					so := &world.scene_objects[closest_hit]
-					wst := world.transforms[closest_hit]
-
-					// Also in object space
-					hit_pt := ray_at(corresponding_ray_obj_space, corresponding_t)
-					hit_normal := surface_normal_at(so, hit_pt)
-					accum += material_contribution_at(so, hit_pt, hit_normal)
-				}
+				accum += integrate_camera_ray(cam, world, ray)
 			}
 
 			pixel_color := accum * sample_scaling_factor

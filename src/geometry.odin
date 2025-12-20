@@ -46,6 +46,8 @@ tr_object_to_CW :: proc(v: Vec3, cam: ^Camera, wst: Transform) -> Vec3 {
 	return v + cum_offset
 }
 
+// A ray modeled by equation \( P(t) = x_0 + dt \)
+// where \(x_0\) is `origin`, \(d\) is `dir`.
 Ray :: struct {
 	origin: Vec3,
 	dir:    Vec3,

@@ -1,6 +1,7 @@
 package iacta
 
 import "core:math"
+import "core:math/rand"
 
 // Solve the quadratic equation ax^2 + bx + c for Reals x_1, x_2.
 // If there are two distinct real solutions, x_1 < x_2.
@@ -16,6 +17,7 @@ solve_quadratic_real :: proc(a, b, c: f32) -> (f32, f32) {
 
 Vec4 :: distinct [4]f32
 Vec3 :: distinct [3]f32
+Vec2 :: distinct [2]f32
 
 // RGBA
 Color :: distinct [4]f32
@@ -54,4 +56,39 @@ colorize_normal_vec :: proc(n: Vec3) -> Color {
 	// r: [0,1] for xyz
 	r := 0.5 * (n + Vec3{1, 1, 1}) //r for remapped
 	return Color{r.x, r.y, r.z, 1.0}
+}
+
+rand_vec2 :: proc(min, max: f32) -> Vec2 {
+	return Vec2{rand.float32_uniform(min, max), rand.float32_uniform(min, max)}
+}
+
+rand_vec3 :: proc(min, max: f32) -> Vec3 {
+	return Vec3{rand.float32_uniform(min, max), rand.float32_uniform(min, max), rand.float32_uniform(min, max)}
+}
+
+rand_pt_in_circle :: proc(r: f32 = 1.0) -> Vec2 {
+	// rejection method: rand pt in cube, retry if not inside sphere
+	rSq := r * r
+	for {
+		x := rand.float32_uniform(-r, r)
+		y := rand.float32_uniform(-r, r)
+		distSq := x * x + y * y
+		if distSq <= rSq {
+			return Vec2{x, y}
+		}
+	}
+}
+
+rand_pt_in_sphere :: proc(r: f32 = 1.0) -> Vec3 {
+	// rejection method: rand pt in cube, retry if not inside sphere
+	rSq := r * r
+	for {
+		x := rand.float32_uniform(-r, r)
+		y := rand.float32_uniform(-r, r)
+		z := rand.float32_uniform(-r, r)
+		distSq := x * x + y * y + z * z
+		if distSq <= rSq {
+			return Vec3{x, y, z}
+		}
+	}
 }
