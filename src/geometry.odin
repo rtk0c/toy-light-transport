@@ -137,13 +137,18 @@ sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> f32 {
 	a := linalg.dot(rd, rd)
 	b := 2 * linalg.dot(rd, ro)
 	c := linalg.dot(ro, ro) - r * r
-	r1, _ := solve_quadratic_real(a, b, c)
+	r1, r2 := solve_quadratic_real(a, b, c)
 	// Doesn't hit
 	if math.is_nan(r1) {
 		return r1
 	}
+
 	// Take the smaller root, that's the closer hit
-	return r1
+	// Both positive roots, take lefter/smaller one (sphere fully in front of ray)
+	if r1 > 0 do return r1
+	// One negative, one positive root (ray origin inside sphere)
+	if r1 < 0 && r2 > 0 do return r2
+	return math.nan_f32()
 }
 
 SkyBox :: struct {

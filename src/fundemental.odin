@@ -1,5 +1,6 @@
 package iacta
 
+import "core:math/linalg"
 import "core:math"
 import "core:math/rand"
 
@@ -91,4 +92,8 @@ rand_pt_in_sphere :: proc(r: f32 = 1.0) -> Vec3 {
 			return Vec3{x, y, z}
 		}
 	}
+}
+
+rand_unit_vec :: proc(r: f32 = 1.0) -> Vec3 {
+	return linalg.normalize(rand_pt_in_sphere(r))
 }

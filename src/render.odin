@@ -1,5 +1,6 @@
 package iacta
 
+import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:math/rand"
@@ -65,7 +66,7 @@ isect_empty :: proc(isect: Intersection) -> bool {
 // Generate new ray, relative to the tip of surface normal at intersection.
 // Returned Ray in camera-world space.
 isect_spawn_ray :: proc(isect: Intersection, v: Vec3) -> Ray {
-	return Ray{origin = isect.pt, dir = isect.normal + v}
+	return Ray{origin = isect.pt, dir = isect.normal}
 }
 
 intersect :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Intersection {
@@ -86,21 +87,22 @@ intersect :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Intersection {
 			isect.t = t
 			// But now, we care about the camera-world space intersection point, so calculate it on the original ray.
 			isect.pt = ray_at(ray, t)
+			isect.normal = surface_normal_at(so, ray_at(ray_obj_space, t))
 		}
 	}
 
 	return isect
 }
 
-MAX_BOUNCES :: 50
+DEFAULT_MAX_BOUNCES :: 10
 
 integrate_camera_ray :: proc(
 	cam: ^Camera,
 	world: ^World,
-	camera_ray: Ray,
-	num_bounces: int = 0,
+	ray: Ray,
+	remaining_bounces: int = DEFAULT_MAX_BOUNCES,
 ) -> Color {
-	isect := intersect(cam, world, camera_ray)
+	isect := intersect(cam, world, ray)
 	if isect_empty(isect) {
 		return world.skybox.sky_color
 	}
@@ -109,21 +111,24 @@ integrate_camera_ray :: proc(
 	wst := world.transforms[isect.obj_id]
 
 	// Also in object space
-	hit_pt := tr_CW_to_object(isect.pt, cam, wst)
-	hit_normal := surface_normal_at(so, hit_pt)
-	light_emitted := material_contribution_at(so, hit_pt, hit_normal)
+	// TODO debugging light transport, just disable all textures. 
+	// hit_pt := tr_CW_to_object(isect.pt, cam, wst)
+	// hit_normal := isect.normal
+	// light_emitted := material_contribution_at(so, hit_pt, hit_normal)
+	light_emitted := Color{0,0,0,1}
 
 	// At recursion limit, just return current contribution
-	if num_bounces > MAX_BOUNCES {
+	if remaining_bounces <= 0 {
+		fmt.printfln("bounce limit reached")
 		return light_emitted
 	}
 
 	// Otherwise, continue to next bounce
-	next_ray := isect_spawn_ray(isect, rand_pt_in_sphere())
+	next_ray := isect_spawn_ray(isect, rand_unit_vec())
 	fcos := f32(0.5) // TODO
-	light_scattered := fcos * integrate_camera_ray(cam, world, next_ray, num_bounces + 1)
+	light_scattered := fcos * integrate_camera_ray(cam, world, next_ray, remaining_bounces - 1)
 
-	return light_emitted + light_scattered
+	return light_scattered
 }
 
 render :: proc(
@@ -177,7 +182,9 @@ render :: proc(
 				// In camera-world space
 				ray := Ray{Vec3(0), pixel_center}
 
-				accum += integrate_camera_ray(cam, world, ray)
+				c := integrate_camera_ray(cam, world, ray)
+				c.a = 1.0
+				accum += c
 			}
 
 			pixel_color := accum * sample_scaling_factor

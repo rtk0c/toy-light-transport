@@ -21,6 +21,8 @@ main :: proc() {
 
 	camera := make_camera()
 	camera.pos = Vec3{-3, -3, 2}
+	// TODO fix if camera is looking directly down, everything vanishes
+	// camera.pos = Vec3{0, 0.001, 3}
 	camera.horz_fov = 70.0 * math.RAD_PER_DEG
 	camera.aspect_ratio = image_aspect_ratio
 	camera_look_at(&camera, Vec3{0, 0, 0})
@@ -37,13 +39,17 @@ main :: proc() {
 		Vec3{0, 0, -50},
 		SceneObject {
 			shape = Sphere{radius = 50},
-			material = PureColorMaterial{color = pixel_normalize(RED_PIXEL)},
+			// material = PureColorMaterial{color = pixel_normalize(Pixel{104, 186, 142, 255})},
+			material = NormalDebugMaterial{},
 		},
 	)
 
 	add_obj_s :: proc(world: ^World, pos: Vec3, s: $T) {
-		add_obj(world, pos, SceneObject{shape = s, material = PureColorMaterial{color = pixel_normalize(Pixel{})}})
+		// m := PureColorMaterial{color = pixel_normalize(Pixel{100, 100, 100, 255})}
+		m := NormalDebugMaterial{}
+		add_obj(world, pos, SceneObject{shape = s, material = m})
 	}
+	// add_obj_s(world, Vec3{0, 0, 0}, Sphere{radius = 0.5})
 	add_obj_s(world, Vec3{0, 0, 0.5}, Sphere{radius = 0.5})
 	add_obj_s(world, Vec3{0, 1, 0.5}, Sphere{radius = 0.5})
 	add_obj_s(world, Vec3{0, -1, 0.5}, Sphere{radius = 0.5})
@@ -52,7 +58,7 @@ main :: proc() {
 	render(
 		&camera,
 		world,
-		samples_per_pixel = 16,
+		samples_per_pixel = 10,
 		viewport_width = image_width,
 		viewport_height = image_height,
 		image = image[:],
