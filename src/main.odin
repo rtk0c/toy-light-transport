@@ -58,7 +58,7 @@ main :: proc() {
 	render(
 		&camera,
 		world,
-		samples_per_pixel = 10,
+		samples_per_pixel = 50,
 		viewport_width = image_width,
 		viewport_height = image_height,
 		image = image[:],

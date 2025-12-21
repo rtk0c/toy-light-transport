@@ -1,6 +1,5 @@
 package iacta
 
-import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:math/rand"
@@ -111,15 +110,13 @@ integrate_camera_ray :: proc(
 	wst := world.transforms[isect.obj_id]
 
 	// Also in object space
-	// TODO debugging light transport, just disable all textures. 
-	// hit_pt := tr_CW_to_object(isect.pt, cam, wst)
-	// hit_normal := isect.normal
-	// light_emitted := material_contribution_at(so, hit_pt, hit_normal)
-	light_emitted := Color{0,0,0,1}
+	hit_pt := tr_CW_to_object(isect.pt, cam, wst)
+	hit_normal := isect.normal
+	// TODO misnomer
+	light_emitted := material_contribution_at(so, hit_pt, hit_normal)
 
 	// At recursion limit, just return current contribution
 	if remaining_bounces <= 0 {
-		fmt.printfln("bounce limit reached")
 		return light_emitted
 	}
 
@@ -183,6 +180,8 @@ render :: proc(
 				ray := Ray{Vec3(0), pixel_center}
 
 				c := integrate_camera_ray(cam, world, ray)
+				// Radiance doesn't carry alpha. In any rendered image, the final alpha must be 1.
+				// For convenience the light transport code path also uses the 4-component RGBA color, but the alpha channel could be removed.
 				c.a = 1.0
 				accum += c
 			}

@@ -99,6 +99,7 @@ surface_normal_at :: proc(so: ^SceneObject, pos: Vec3) -> Vec3 {
 }
 
 // Position in object space.
+// TODO this is a misnomer, this really should be the texture sampling function
 material_contribution_at :: proc(so: ^SceneObject, pos, normal: Vec3) -> Color {
 	switch &material in so.material {
 	case NormalDebugMaterial:
