@@ -39,14 +39,16 @@ main :: proc() {
 		Vec3{0, 0, -50},
 		SceneObject {
 			shape = Sphere{radius = 50},
-			// material = PureColorMaterial{color = pixel_normalize(Pixel{104, 186, 142, 255})},
-			material = NormalDebugMaterial{},
+			material = DiffuseMaterial{reflectance = 0.5},
+			// material = PureColorMaterial{color = rgba(104, 186, 142, 1) },
+			// material = NormalDebugMaterial{},
 		},
 	)
 
 	add_obj_s :: proc(world: ^World, pos: Vec3, s: $T) {
-		// m := PureColorMaterial{color = pixel_normalize(Pixel{100, 100, 100, 255})}
-		m := NormalDebugMaterial{}
+		m := DiffuseMaterial{reflectance = 0.5}
+		// m := PureColorMaterial{color = rgba(100, 100, 100, 1)  }
+		// m := NormalDebugMaterial{}
 		add_obj(world, pos, SceneObject{shape = s, material = m})
 	}
 	// add_obj_s(world, Vec3{0, 0, 0}, Sphere{radius = 0.5})

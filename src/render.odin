@@ -1,5 +1,6 @@
 package iacta
 
+import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 import "core:math/rand"
@@ -41,6 +42,10 @@ camera_look_at :: proc(cam: ^Camera, pt: Vec3) {
 }
 
 NormalDebugMaterial :: struct {}
+
+DiffuseMaterial :: struct {
+	reflectance: f32, // [0,1]
+}
 
 PureColorMaterial :: struct {
 	color: Color,
@@ -112,18 +117,24 @@ integrate_camera_ray :: proc(
 	// Also in object space
 	hit_pt := tr_CW_to_object(isect.pt, cam, wst)
 	hit_normal := isect.normal
-	// TODO misnomer
-	light_emitted := material_contribution_at(so, hit_pt, hit_normal)
+	light_emitted := light_emitted_at(so, hit_pt, hit_normal)
 
 	// At recursion limit, just return current contribution
 	if remaining_bounces <= 0 {
 		return light_emitted
 	}
 
+	ωo := -ray.dir
+	ωp := rand_unit_vec()
+
 	// Otherwise, continue to next bounce
-	next_ray := isect_spawn_ray(isect, rand_unit_vec())
-	fcos := f32(0.5) // TODO
-	light_scattered := fcos * integrate_camera_ray(cam, world, next_ray, remaining_bounces - 1)
+	next_ray := isect_spawn_ray(isect, ωp)
+	fcos := material_contribution_at(so, hit_pt, hit_normal, ωo, ωp) // * math.abs(linalg.dot(hit_normal, ωp))
+	if fcos == 0.0 {
+		return light_emitted
+	}
+	light_scattered :=
+		light_emitted + fcos * integrate_camera_ray(cam, world, next_ray, remaining_bounces - 1)
 
 	return light_scattered
 }

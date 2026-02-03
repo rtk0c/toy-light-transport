@@ -84,6 +84,7 @@ SceneObject :: struct {
 	},
 	material: union {
 		NormalDebugMaterial,
+		DiffuseMaterial,
 		PureColorMaterial,
 	},
 }
@@ -98,12 +99,22 @@ surface_normal_at :: proc(so: ^SceneObject, pos: Vec3) -> Vec3 {
 	return Vec3{}
 }
 
+// Radiance emitted by light sources.
+// For all other objects, this should be 0.
+light_emitted_at :: proc(so: ^SceneObject, pos, normal: Vec3) -> Color {
+	return Color{}
+}
+
 // Position in object space.
 // TODO this is a misnomer, this really should be the texture sampling function
-material_contribution_at :: proc(so: ^SceneObject, pos, normal: Vec3) -> Color {
+material_contribution_at :: proc(so: ^SceneObject, pos, normal: Vec3, ωo, ωi: Vec3) -> Color {
 	switch &material in so.material {
 	case NormalDebugMaterial:
 		return colorize_normal_vec(normal)
+	case DiffuseMaterial:
+		// TODO reject sample if ωo and ωi are not in the same hemisphere
+		// return material.reflectance / math.PI
+		return material.reflectance
 	case PureColorMaterial:
 		return material.color
 	}

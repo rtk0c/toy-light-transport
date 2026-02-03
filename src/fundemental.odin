@@ -1,7 +1,7 @@
 package iacta
 
-import "core:math/linalg"
 import "core:math"
+import "core:math/linalg"
 import "core:math/rand"
 
 // Solve the quadratic equation ax^2 + bx + c for Reals x_1, x_2.
@@ -32,7 +32,7 @@ RED_PIXEL :: Pixel{255, 0, 0, 0xFF}
 GREEN_PIXEL :: Pixel{0, 255, 0, 0xFF}
 BLUE_PIXEL :: Pixel{0, 0, 255, 0xFF}
 
-pixel_denormalize :: proc(v: Color) -> Pixel {
+pixel_denormalize :: proc "contextless" (v: Color) -> Pixel {
 	// Ray Tracing in a Weekend:
 	// Here is multiplied by 255.99, which I think means "cloest f32 value to 256".
 	// Does this make more sense? quick thought, maybe: the point of denormalization is to map the continuous [1,0] number line to discrete [0,255].
@@ -42,17 +42,38 @@ pixel_denormalize :: proc(v: Color) -> Pixel {
 	return Pixel{u8(u.r), u8(u.g), u8(u.b), u8(u.a)}
 }
 
-pixel_normalize :: proc(p: Pixel) -> Color {
+pixel_normalize :: proc "contextless" (p: Pixel) -> Color {
 	return Color{f32(p.r), f32(p.g), f32(p.b), f32(p.a)} / Color(255.0)
 }
 
-pixel_mul :: proc(p, q: Pixel) -> Color {
+pixel_hex :: proc "contextless" (v: u32) -> Pixel {
+	HexCodeFields :: bit_field u32 {
+		r: u8 | 8,
+		g: u8 | 8,
+		b: u8 | 8,
+		a: u8 | 8,
+	}
+	f := HexCodeFields(v)
+	return Pixel{f.r, f.g, f.b, f.a}
+}
+
+hex :: proc "contextless" (v: u32) -> Color {
+	return pixel_normalize(pixel_hex(v))
+}
+
+// Conveniently, VSCode provides us a color picker for expressions like rgba(0-255, 0-255, 0-255, 0-1)
+// So let's name our functions like this
+rgba :: proc "contextless" (r, g, b: u8, a: f32) -> Color {
+	return Color{f32(r) / 0xFF, f32(g) / 0xFF, f32(b) / 255, a}
+}
+
+pixel_mul :: proc "contextless" (p, q: Pixel) -> Color {
 	a := pixel_normalize(p)
 	b := pixel_normalize(q)
 	return a.rgba * b.rgba
 }
 
-colorize_normal_vec :: proc(n: Vec3) -> Color {
+colorize_normal_vec :: proc "contextless" (n: Vec3) -> Color {
 	// n: [-1,1] for xyz
 	// r: [0,1] for xyz
 	r := 0.5 * (n + Vec3{1, 1, 1}) //r for remapped
@@ -64,7 +85,11 @@ rand_vec2 :: proc(min, max: f32) -> Vec2 {
 }
 
 rand_vec3 :: proc(min, max: f32) -> Vec3 {
-	return Vec3{rand.float32_uniform(min, max), rand.float32_uniform(min, max), rand.float32_uniform(min, max)}
+	return Vec3 {
+		rand.float32_uniform(min, max),
+		rand.float32_uniform(min, max),
+		rand.float32_uniform(min, max),
+	}
 }
 
 rand_pt_in_circle :: proc(r: f32 = 1.0) -> Vec2 {
