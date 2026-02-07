@@ -41,16 +41,6 @@ camera_look_at :: proc(cam: ^Camera, pt: Vec3) {
 	cam.view = linalg.normalize(pt - cam.pos)
 }
 
-NormalDebugMaterial :: struct {}
-
-DiffuseMaterial :: struct {
-	reflectance: f32, // [0,1]
-}
-
-PureColorMaterial :: struct {
-	color: Color,
-}
-
 Intersection :: struct {
 	// Which object did we hit?
 	obj_id: int,

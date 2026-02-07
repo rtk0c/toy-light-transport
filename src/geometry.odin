@@ -78,14 +78,24 @@ ray_tr_object_to_CW :: proc(ray: Ray, cam: ^Camera, wst: Transform) -> Ray {
 // There is no (obvious?) way to have systems, because everything has to go into the same accelaration structure.
 // There is no way to process entities by type: all spheres at once, all triangle meshes at once, etc.
 
+NormalDebugMaterial :: struct {}
+
+PureColorMaterial :: struct {
+	color: Color,
+}
+
+DiffuseMaterial :: struct {
+	reflectance: Color,
+}
+
 SceneObject :: struct {
 	shape:    union {
 		Sphere,
 	},
 	material: union {
 		NormalDebugMaterial,
-		DiffuseMaterial,
 		PureColorMaterial,
+		DiffuseMaterial,
 	},
 }
 
@@ -102,6 +112,12 @@ surface_normal_at :: proc(so: ^SceneObject, pos: Vec3) -> Vec3 {
 // Radiance emitted by light sources.
 // For all other objects, this should be 0.
 light_emitted_at :: proc(so: ^SceneObject, pos, normal: Vec3) -> Color {
+	#partial switch &material in so.material {
+	case NormalDebugMaterial:
+		return colorize_normal_vec(normal)
+	case PureColorMaterial:
+		return material.color
+	}
 	return Color{}
 }
 
@@ -110,13 +126,12 @@ light_emitted_at :: proc(so: ^SceneObject, pos, normal: Vec3) -> Color {
 material_contribution_at :: proc(so: ^SceneObject, pos, normal: Vec3, ωo, ωi: Vec3) -> Color {
 	switch &material in so.material {
 	case NormalDebugMaterial:
-		return colorize_normal_vec(normal)
+	case PureColorMaterial:
+		return 0
 	case DiffuseMaterial:
 		// TODO reject sample if ωo and ωi are not in the same hemisphere
 		// return material.reflectance / math.PI
 		return material.reflectance
-	case PureColorMaterial:
-		return material.color
 	}
 
 	return Color{}

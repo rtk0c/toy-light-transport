@@ -15,8 +15,8 @@ main :: proc() {
 	rand.reset(0x531864e09a8e25d6)
 
 	// TODO controllable from cli arg
-	image_width := 160
-	image_height := 90
+	image_width := 160*2
+	image_height := 90*2
 	image_aspect_ratio := f32(image_width) / f32(image_height)
 
 	camera := make_camera()
@@ -39,28 +39,30 @@ main :: proc() {
 		Vec3{0, 0, -50},
 		SceneObject {
 			shape = Sphere{radius = 50},
-			material = DiffuseMaterial{reflectance = 0.5},
-			// material = PureColorMaterial{color = rgba(104, 186, 142, 1) },
+			// material = DiffuseMaterial{reflectance = 0.5},
+			material = DiffuseMaterial{reflectance = rgba(104, 186, 142, 1) },
 			// material = NormalDebugMaterial{},
 		},
 	)
 
 	add_obj_s :: proc(world: ^World, pos: Vec3, s: $T) {
-		m := DiffuseMaterial{reflectance = 0.5}
-		// m := PureColorMaterial{color = rgba(100, 100, 100, 1)  }
-		// m := NormalDebugMaterial{}
 		add_obj(world, pos, SceneObject{shape = s, material = m})
 	}
+	m1 := DiffuseMaterial{reflectance = 0.8}
+	m1orange := DiffuseMaterial{reflectance = rgba(223, 141, 54, 1) }
+	m2 := PureColorMaterial{color = rgba(223, 141, 54, 1)  }
+	m3 := NormalDebugMaterial{}
+	s05 := Sphere{radius = 0.5}
 	// add_obj_s(world, Vec3{0, 0, 0}, Sphere{radius = 0.5})
-	add_obj_s(world, Vec3{0, 0, 0.5}, Sphere{radius = 0.5})
-	add_obj_s(world, Vec3{0, 1, 0.5}, Sphere{radius = 0.5})
-	add_obj_s(world, Vec3{0, -1, 0.5}, Sphere{radius = 0.5})
+	add_obj(world, Vec3{0, 1, 0.5}, SceneObject{shape = s05, material = m1})
+	add_obj(world, Vec3{0, 0, 0.5}, SceneObject{shape = s05, material = m1orange})
+	add_obj(world, Vec3{0, -1, 0.5}, SceneObject{shape = s05, material = m1})
 
 	image := make([dynamic]Pixel, image_width * image_height)
 	render(
 		&camera,
 		world,
-		samples_per_pixel = 50,
+		samples_per_pixel = 100,
 		viewport_width = image_width,
 		viewport_height = image_height,
 		image = image[:],
