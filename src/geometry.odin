@@ -22,13 +22,13 @@ Transform :: struct {
 	R3_p:         Vec3,
 }
 
-apply_tr :: proc "contextless" (v: Vec3, tr: Transform) -> Vec3 {
-	return tr.R3_p + tr.SO3 * v
-}
+forward_tr :: proc{forward_tr_vec, forward_tr_point}
+forward_tr_vec :: proc "contextless" (v: Vec3, tr: Transform) -> Vec3 {return tr.SO3 * v}
+forward_tr_point :: proc "contextless" (v: Point3, tr: Transform) -> Point3 {return Point3(tr.R3_p + tr.SO3 * Vec3(v))}
 
-inverse_tr :: proc "contextless" (v: Vec3, tr: Transform) -> Vec3 {
-	return tr.SO3_inv * (v - tr.R3_p)
-}
+inverse_tr :: proc{inverse_tr_vec, inverse_tr_point}
+inverse_tr_vec :: proc "contextless" (v: Vec3, tr: Transform) -> Vec3 {	return tr.SO3_inv * v}
+inverse_tr_point :: proc "contextless" (v: Point3, tr: Transform) -> Point3 {return Point3(tr.SO3_inv * (Vec3(v) - tr.R3_p))}
 
 to_homogeneous :: proc "contextless" (tr: Transform) -> (Mat4, Mat4) {
 	// "If the cast is to a larger matrix type, the matrix is extended with zeros everywhere and ones in the diagonal for the unfilled elements of the extended matrix."
@@ -48,15 +48,15 @@ from_homogeneous :: proc "contextless" (forward, inverse: Mat4) -> Transform {
 	return Transform{Mat3(forward), Mat3(inverse), translation}
 }
 
-tr_world_to_object :: proc "contextless" (v: Vec3, wst: Transform) -> Vec3 {
+tr_world_to_object :: proc "contextless" (v: $T, wst: Transform) -> T {
 	return inverse_tr(v, wst)
 }
 
-tr_object_to_world :: proc "contextless" (v: Vec3, wst: Transform) -> Vec3 {
-	return apply_tr(v, wst)
+tr_object_to_world :: proc "contextless" (v: $T, wst: Transform) -> T {
+	return forward_tr(v, wst)
 }
 
-tr_CW_to_object :: proc "contextless" (v: Vec3, cam: ^Camera, wst: Transform) -> Vec3 {
+tr_CW_to_object :: proc "contextless" (v: $T, cam: ^Camera, wst: Transform) -> T {
 	// IMPORTANT to not compute this as `((v + cam.pos) - wst.R3_p)`.
 	// The whole point of doing rendering in camera-world space is to give most of the IEEE-754 precision to objects closer to the camera.
 	// If that had been done, when both the camera and the object are really far from origin of world space, the `(v + cam.pos)` step already destroys most the precision in `v`, because `cam.pos` is a big number.
@@ -66,7 +66,7 @@ tr_CW_to_object :: proc "contextless" (v: Vec3, cam: ^Camera, wst: Transform) ->
 	return inverse_tr(v, wst)
 }
 
-tr_object_to_CW :: proc "contextless" (v: Vec3, cam: ^Camera, wst: Transform) -> Vec3 {
+tr_object_to_CW :: proc "contextless" (v: $T, cam: ^Camera, wst: Transform) -> T {
 	// # object -> world
 	// We want (0,0) in object to map to `wst.R3_p` in world, so `v + wst.R3_p`
 	//
@@ -75,26 +75,28 @@ tr_object_to_CW :: proc "contextless" (v: Vec3, cam: ^Camera, wst: Transform) ->
 	wst := wst
 	wst.R3_p -= cam.pos
 	cum_offset := wst.R3_p - cam.pos
-	return apply_tr(v, wst)
+	return forward_tr(v, wst)
 }
 
 // A ray modeled by equation \( P(t) = x_0 + dt \)
 // where \(x_0\) is `origin`, \(d\) is `dir`.
 Ray :: struct {
-	origin: Vec3,
+	origin: Point3,
 	dir:    Vec3,
 }
 
-ray_at :: proc(ray: Ray, t: f32) -> Vec3 {
-	return ray.origin + ray.dir * t
+ray_at :: proc(ray: Ray, t: f32) -> Point3 {
+	return ray.origin + Point3(ray.dir) * t
 }
 
 ray_tr_CW_to_object :: proc(ray: Ray, cam: ^Camera, wst: Transform) -> Ray {
-	return Ray{tr_CW_to_object(ray.origin, cam, wst), ray.dir}
+	return Ray{tr_CW_to_object(ray.origin, cam, wst), tr_CW_to_object(ray.dir, cam, wst)}
+	// return Ray{tr_CW_to_object(ray.origin, cam, wst), ray.dir}
 }
 
 ray_tr_object_to_CW :: proc(ray: Ray, cam: ^Camera, wst: Transform) -> Ray {
-	return Ray{tr_object_to_CW(ray.origin, cam, wst), ray.dir}
+	return Ray{tr_object_to_CW(ray.origin, cam, wst), tr_object_to_CW(ray.dir, cam, wst)}
+	// return Ray{tr_object_to_CW(ray.origin, cam, wst), ray.dir}
 }
 
 // Discussion of entity storage
@@ -135,7 +137,7 @@ SceneObject :: struct {
 }
 
 // Position in object space.
-surface_normal_at :: proc(so: ^SceneObject, pos: Vec3) -> Vec3 {
+surface_normal_at :: proc(so: ^SceneObject, pos: Point3) -> Vec3 {
 	switch &shape in so.shape {
 	case Sphere:
 		return sphere_surface_normal_at(&shape, pos)
@@ -146,7 +148,7 @@ surface_normal_at :: proc(so: ^SceneObject, pos: Vec3) -> Vec3 {
 
 // Radiance emitted by light sources.
 // For all other objects, this should be 0.
-light_emitted_at :: proc(so: ^SceneObject, pos, normal: Vec3) -> Color {
+light_emitted_at :: proc(so: ^SceneObject, pos: Point3, normal: Vec3) -> Color {
 	#partial switch &material in so.material {
 	case NormalDebugMaterial:
 		return colorize_normal_vec(normal)
@@ -157,7 +159,7 @@ light_emitted_at :: proc(so: ^SceneObject, pos, normal: Vec3) -> Color {
 }
 
 // Position in object space.
-bsdf_at :: proc(so: ^SceneObject, pos, normal: Vec3, ωo, ωi: Vec3) -> Color {
+bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Vec3, ωo, ωi: Vec3) -> Color {
 	switch &material in so.material {
 	case NormalDebugMaterial:
 	case PureColorMaterial:
@@ -201,12 +203,12 @@ Sphere :: struct {
 	radius: f32,
 }
 
-sphere_surface_normal_at :: proc(sphere: ^Sphere, pt: Vec3) -> Vec3 {
-	return linalg.normalize(pt)
+sphere_surface_normal_at :: proc(sphere: ^Sphere, pt: Point3) -> Vec3 {
+	return Vec3(linalg.normalize(pt))
 }
 
 sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> f32 {
-	ro := ray.origin
+	ro := Vec3(ray.origin)
 	rd := ray.dir
 
 	r := sphere.radius

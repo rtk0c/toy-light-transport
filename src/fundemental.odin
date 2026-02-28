@@ -55,6 +55,9 @@ Vec4 :: linalg.Vector4f32
 Vec3 :: linalg.Vector3f32
 Vec2 :: linalg.Vector2f32
 
+Point3 :: distinct Vec3
+Point2 :: distinct Vec2
+
 // RGBA
 Color :: distinct [4]f32
 

@@ -48,7 +48,7 @@ Intersection :: struct {
 	// Note that t is independent of the corredinate system, i.e. stays the same whether the ray is represented in camera-world space or object space.
 	t:      f32,
 	// Where is the intersection, in view-world space?
-	pt:     Vec3,
+	pt:     Point3,
 	// Surface normal at the
 	normal: Vec3,
 }
@@ -178,7 +178,7 @@ render :: proc(
 					pixel_delta_y * (f32(y) + sample_y_off)
 
 				// In camera-world space
-				ray := Ray{Vec3(0), pixel_center}
+				ray := Ray{Point3(0), pixel_center}
 
 				c := integrate_camera_ray(cam, world, ray)
 				// Radiance doesn't carry alpha. In any rendered image, the final alpha must be 1.
