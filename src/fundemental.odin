@@ -16,9 +16,44 @@ solve_quadratic_real :: proc(a, b, c: f32) -> (f32, f32) {
 	return (-b - root) / (2.0 * a), (-b + root) / (2.0 * a)
 }
 
-Vec4 :: distinct [4]f32
-Vec3 :: distinct [3]f32
-Vec2 :: distinct [2]f32
+Mat4 :: linalg.Matrix4x4f32
+Mat3 :: linalg.Matrix3x3f32
+
+rotate_object_to_tangent :: proc "contextless" (surface_normal: Vec3) -> Mat3 {
+	UP :: Vec3{0, 0, 1}
+	perp := linalg.cross(surface_normal, UP)
+	angle := linalg.dot(surface_normal, UP) / linalg.length(surface_normal)
+	return linalg.matrix3_rotate(angle, perp)
+}
+
+householder :: proc "contextless" (v: Vec3) -> Mat3 {
+	I := linalg.identity_matrix(Mat3)
+	v2 := linalg.dot(v, v)
+	vvT := linalg.outer_product(v, v)
+
+	// \( \vectorbold{I} - \frac{2}{\vectorbold{v} \cdot \vectorbold{v}} \vectorbold{v} \vectorbold{v}^T \)
+	//
+	return I - (2 / v2) * vvT
+}
+
+rotate_from_to :: proc "contextless" (f, t: Vec3) -> Mat3 {
+	refl: Vec3
+	if math.abs(f.x) < 0.72 && math.abs(t.x) < 0.72 {
+		refl = Vec3{1, 0, 0}
+	} else if math.abs(f.y) < 0.72 && math.abs(t.y) < 0.72 {
+		refl = Vec3{0, 1, 0}
+	} else {
+		refl = Vec3{0, 0, 1}
+	}
+
+	// \( \vectorbold{H}(r - t) \vectorbold{H}(r - f) \)
+	//
+	return householder(refl - t) * householder(refl - f)
+}
+
+Vec4 :: linalg.Vector4f32
+Vec3 :: linalg.Vector3f32
+Vec2 :: linalg.Vector2f32
 
 // RGBA
 Color :: distinct [4]f32
@@ -105,8 +140,8 @@ rand_pt_in_circle :: proc(r: f32 = 1.0) -> Vec2 {
 	}
 }
 
-rand_pt_in_sphere :: proc(r: f32 = 1.0) -> Vec3 {
-	// rejection method: rand pt in cube, retry if not inside sphere
+rand_pt_in_sphere :: proc(r: f32 = 1.0) ->  Vec3 {// rejection method: rand pt in cube, retry if not inside sphere
+
 	rSq := r * r
 	for {
 		x := rand.float32_uniform(-r, r)

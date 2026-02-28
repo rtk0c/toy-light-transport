@@ -1,6 +1,7 @@
 package iacta
 
 import "core:math"
+import "core:math/linalg"
 import "core:math/rand"
 import stbi "vendor:stb/image"
 
@@ -15,8 +16,8 @@ main :: proc() {
 	rand.reset(0x531864e09a8e25d6)
 
 	// TODO controllable from cli arg
-	image_width := 160*2
-	image_height := 90*2
+	image_width := 160
+	image_height := 90
 	image_aspect_ratio := f32(image_width) / f32(image_height)
 
 	camera := make_camera()
@@ -30,11 +31,14 @@ main :: proc() {
 	world := make_world()
 	world.skybox.sky_color = pixel_normalize(Pixel{162, 224, 242, 0xFF})
 
-	add_obj :: proc(world: ^World, pos: Vec3, s: $T) {
+	add_obj :: proc(world: ^World, t: Transform, s: $T) {
 		append(&world.scene_objects, s)
-		append(&world.transforms, Transform{pos = pos})
+		append(&world.transforms, t)
 	}
-	add_obj(
+	add_obj_p :: proc(world: ^World, pos: Vec3, s: $T) {
+		add_obj(world, Transform{1, 1, pos}, s)
+	}
+	add_obj_p(
 		world,
 		Vec3{0, 0, -50},
 		SceneObject {
@@ -46,7 +50,7 @@ main :: proc() {
 	)
 
 	add_obj_s :: proc(world: ^World, pos: Vec3, s: $T) {
-		add_obj(world, pos, SceneObject{shape = s, material = m})
+		add_obj_p(world, pos, SceneObject{shape = s, material = m})
 	}
 	m1 := DiffuseMaterial{reflectance = 0.8}
 	m1orange := DiffuseMaterial{reflectance = rgba(223, 141, 54, 1) }
@@ -54,15 +58,16 @@ main :: proc() {
 	m3 := NormalDebugMaterial{}
 	s05 := Sphere{radius = 0.5}
 	// add_obj_s(world, Vec3{0, 0, 0}, Sphere{radius = 0.5})
-	add_obj(world, Vec3{0, 1, 0.5}, SceneObject{shape = s05, material = m1})
-	add_obj(world, Vec3{0, 0, 0.5}, SceneObject{shape = s05, material = m1orange})
-	add_obj(world, Vec3{0, -1, 0.5}, SceneObject{shape = s05, material = m1})
+	add_obj_p(world, Vec3{0, 1, 0.5}, SceneObject{shape = s05, material = m1})
+	rot := linalg.matrix3_rotate(0.1, Vec3{1,1,1})
+	add_obj(world, Transform{rot, linalg.inverse(rot), Vec3{0, 0, 0.5}}, SceneObject{shape = s05, material = m3})
+	add_obj_p(world, Vec3{0, -1, 0.5}, SceneObject{shape = s05, material = m1orange})
 
 	image := make([dynamic]Pixel, image_width * image_height)
 	render(
 		&camera,
 		world,
-		samples_per_pixel = 100,
+		samples_per_pixel = 50,
 		viewport_width = image_width,
 		viewport_height = image_height,
 		image = image[:],

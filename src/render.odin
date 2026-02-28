@@ -119,7 +119,7 @@ integrate_camera_ray :: proc(
 
 	// Otherwise, continue to next bounce
 	next_ray := isect_spawn_ray(isect, ωp)
-	fcos := material_contribution_at(so, hit_pt, hit_normal, ωo, ωp) // * math.abs(linalg.dot(hit_normal, ωp))
+	fcos := bsdf_at(so, hit_pt, hit_normal, ωo, ωp) // * math.abs(linalg.dot(hit_normal, ωp))
 	if fcos == 0.0 {
 		return light_emitted
 	}
