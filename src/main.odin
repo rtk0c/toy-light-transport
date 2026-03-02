@@ -58,16 +58,16 @@ main :: proc() {
 	m3 := NormalDebugMaterial{}
 	s05 := Sphere{radius = 0.5}
 	// add_obj_s(world, Vec3{0, 0, 0}, Sphere{radius = 0.5})
-	// add_obj_p(world, Vec3{0, 1, 0.5}, SceneObject{shape = s05, material = m1})
+	add_obj_p(world, Vec3{0, 1, 0.5}, SceneObject{shape = s05, material = m1})
 	// add_obj_p(world, Vec3{0, 0, 0.5}, SceneObject{shape = s05, material = m2})
-	// add_obj_p(world, Vec3{0, -1, 0.5}, SceneObject{shape = s05, material = m1orange})
+	add_obj_p(world, Vec3{0, -1, 0.5}, SceneObject{shape = s05, material = m1orange})
 	rot: Mat3
-	rot = linalg.matrix3_rotate(math.PI/2, Vec3{1,1,1})
-	add_obj(world, Transform{rot, linalg.inverse(rot), Vec3{0, 1, 0.5}}, SceneObject{shape = s05, material = m3})
-	rot = linalg.matrix3_rotate(math.PI, Vec3{1,1,1})
+	// rot = linalg.matrix3_rotate(math.PI/2, Vec3{1,1,1})
+	// add_obj(world, Transform{rot, linalg.inverse(rot), Vec3{0, 1, 0.5}}, SceneObject{shape = s05, material = m3})
+	rot = linalg.matrix3_rotate(0.1, Vec3{1,1,1})
 	add_obj(world, Transform{rot, linalg.inverse(rot), Vec3{0, 0, 0.5}}, SceneObject{shape = s05, material = m3})
-	rot = linalg.matrix3_rotate(math.PI*3/2, Vec3{1,1,1})
-	add_obj(world, Transform{rot, linalg.inverse(rot), Vec3{0, -1, 0.5}}, SceneObject{shape = s05, material = m3})
+	// rot = linalg.matrix3_rotate(math.PI*3/2, Vec3{1,1,1})
+	// add_obj(world, Transform{rot, linalg.inverse(rot), Vec3{0, -1, 0.5}}, SceneObject{shape = s05, material = m3})
 
 	image := make([dynamic]Pixel, image_width * image_height)
 	render(
