@@ -19,14 +19,14 @@ solve_quadratic_real :: proc(a, b, c: f32) -> (f32, f32) {
 Mat4 :: linalg.Matrix4x4f32
 Mat3 :: linalg.Matrix3x3f32
 
-rotate_object_to_tangent :: proc "contextless" (surface_normal: Vec3) -> Mat3 {
+matrix3_rotate_object_to_tangent :: proc "contextless" (surface_normal: Vec3) -> Mat3 {
 	UP :: Vec3{0, 0, 1}
 	perp := linalg.cross(surface_normal, UP)
 	angle := linalg.dot(surface_normal, UP) / linalg.length(surface_normal)
 	return linalg.matrix3_rotate(angle, perp)
 }
 
-householder :: proc "contextless" (v: Vec3) -> Mat3 {
+matrix3_householder :: proc "contextless" (v: Vec3) -> Mat3 {
 	I := linalg.identity_matrix(Mat3)
 	v2 := linalg.dot(v, v)
 	vvT := linalg.outer_product(v, v)
@@ -36,7 +36,7 @@ householder :: proc "contextless" (v: Vec3) -> Mat3 {
 	return I - (2 / v2) * vvT
 }
 
-rotate_from_to :: proc "contextless" (f, t: Vec3) -> Mat3 {
+matrix3_rotate_from_to :: proc "contextless" (f, t: Vec3) -> Mat3 {
 	refl: Vec3
 	if math.abs(f.x) < 0.72 && math.abs(t.x) < 0.72 {
 		refl = Vec3{1, 0, 0}
@@ -48,7 +48,7 @@ rotate_from_to :: proc "contextless" (f, t: Vec3) -> Mat3 {
 
 	// \( \vectorbold{H}(r - t) \vectorbold{H}(r - f) \)
 	//
-	return householder(refl - t) * householder(refl - f)
+	return matrix3_householder(refl - t) * matrix3_householder(refl - f)
 }
 
 Vec4 :: linalg.Vector4f32

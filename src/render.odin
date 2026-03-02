@@ -63,7 +63,7 @@ isect_spawn_ray :: proc(isect: Intersection, v: Vec3) -> Ray {
 	return Ray{origin = isect.pt, dir = isect.normal}
 }
 
-intersect :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Intersection {
+intersect_ray_with_world :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Intersection {
 	isect := Intersection{}
 	isect.obj_id = -1
 	isect.t = math.inf_f32(+1)
@@ -96,7 +96,7 @@ integrate_camera_ray :: proc(
 	ray: Ray,
 	remaining_bounces: int = DEFAULT_MAX_BOUNCES,
 ) -> Color {
-	isect := intersect(cam, world, ray)
+	isect := intersect_ray_with_world(cam, world, ray)
 	if isect_empty(isect) {
 		return world.skybox.sky_color
 	}

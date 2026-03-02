@@ -30,7 +30,7 @@ inverse_tr :: proc{inverse_tr_vec, inverse_tr_point}
 inverse_tr_vec :: proc "contextless" (v: Vec3, tr: Transform) -> Vec3 {	return tr.SO3_inv * v}
 inverse_tr_point :: proc "contextless" (v: Point3, tr: Transform) -> Point3 {return Point3(tr.SO3_inv * (Vec3(v) - tr.R3_p))}
 
-to_homogeneous :: proc "contextless" (tr: Transform) -> (Mat4, Mat4) {
+transform_to_homogeneous :: proc "contextless" (tr: Transform) -> (Mat4, Mat4) {
 	// "If the cast is to a larger matrix type, the matrix is extended with zeros everywhere and ones in the diagonal for the unfilled elements of the extended matrix."
 	forward := Mat4(tr.SO3)
 	forward[0, 3] = tr.R3_p[0]
@@ -43,7 +43,7 @@ to_homogeneous :: proc "contextless" (tr: Transform) -> (Mat4, Mat4) {
 	return forward, inverse
 }
 
-from_homogeneous :: proc "contextless" (forward, inverse: Mat4) -> Transform {
+transform_from_homogeneous :: proc "contextless" (forward, inverse: Mat4) -> Transform {
 	translation := Vec3{forward[0, 3], forward[1, 3], forward[2, 3]}
 	return Transform{Mat3(forward), Mat3(inverse), translation}
 }
