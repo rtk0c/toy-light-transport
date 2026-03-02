@@ -22,12 +22,14 @@ Transform :: struct {
 	R3_p:         Vec3,
 }
 
-forward_tr :: proc{forward_tr_vec, forward_tr_point}
+forward_tr :: proc{forward_tr_vec, forward_tr_normal, forward_tr_point}
 forward_tr_vec :: proc "contextless" (v: Vec3, tr: Transform) -> Vec3 {return tr.SO3 * v}
+forward_tr_normal :: proc "contextless" (v: Normal3, tr: Transform) -> Normal3 {return tr.SO3_inv * v}
 forward_tr_point :: proc "contextless" (v: Point3, tr: Transform) -> Point3 {return Point3(tr.R3_p + tr.SO3 * Vec3(v))}
 
-inverse_tr :: proc{inverse_tr_vec, inverse_tr_point}
+inverse_tr :: proc{inverse_tr_vec, inverse_tr_normal, inverse_tr_point}
 inverse_tr_vec :: proc "contextless" (v: Vec3, tr: Transform) -> Vec3 {	return tr.SO3_inv * v}
+inverse_tr_normal :: proc "contextless" (v: Normal3, tr: Transform) -> Normal3 {return tr.SO3 * v}
 inverse_tr_point :: proc "contextless" (v: Point3, tr: Transform) -> Point3 {return Point3(tr.SO3_inv * (Vec3(v) - tr.R3_p))}
 
 transform_to_homogeneous :: proc "contextless" (tr: Transform) -> (Mat4, Mat4) {
@@ -137,18 +139,18 @@ SceneObject :: struct {
 }
 
 // Position in object space.
-surface_normal_at :: proc(so: ^SceneObject, pos: Point3) -> Vec3 {
+surface_normal_at :: proc(so: ^SceneObject, pos: Point3) -> Normal3 {
 	switch &shape in so.shape {
 	case Sphere:
 		return sphere_surface_normal_at(&shape, pos)
 	}
 
-	return Vec3{}
+	return Normal3{}
 }
 
 // Radiance emitted by light sources.
 // For all other objects, this should be 0.
-light_emitted_at :: proc(so: ^SceneObject, pos: Point3, normal: Vec3) -> Color {
+light_emitted_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3) -> Color {
 	#partial switch &material in so.material {
 	case NormalDebugMaterial:
 		return colorize_normal_vec(normal)
@@ -159,7 +161,7 @@ light_emitted_at :: proc(so: ^SceneObject, pos: Point3, normal: Vec3) -> Color {
 }
 
 // Position in object space.
-bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Vec3, ωo, ωi: Vec3) -> Color {
+bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3, ωo, ωi: Vec3) -> Color {
 	switch &material in so.material {
 	case NormalDebugMaterial:
 	case PureColorMaterial:
@@ -175,7 +177,7 @@ bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Vec3, ωo, ωi: Vec3) -> 
 	return Color{}
 }
 
-sample_bsdf_at :: proc(so: ^SceneObject, pos, normal: Vec3, ωo, ωi: Vec3) -> Vec3 {
+sample_bsdf_at :: proc(so: ^SceneObject, pos, normal: Normal3, ωo, ωi: Vec3) -> Vec3 {
 	switch &material in so.material {
 	case NormalDebugMaterial:
 	case PureColorMaterial:
@@ -203,8 +205,8 @@ Sphere :: struct {
 	radius: f32,
 }
 
-sphere_surface_normal_at :: proc(sphere: ^Sphere, pt: Point3) -> Vec3 {
-	return Vec3(linalg.normalize(pt))
+sphere_surface_normal_at :: proc(sphere: ^Sphere, pt: Point3) -> Normal3 {
+	return Normal3(linalg.normalize(pt))
 }
 
 sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> f32 {

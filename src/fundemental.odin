@@ -19,11 +19,17 @@ solve_quadratic_real :: proc(a, b, c: f32) -> (f32, f32) {
 Mat4 :: linalg.Matrix4x4f32
 Mat3 :: linalg.Matrix3x3f32
 
+// Compute the transform from object space into tangent space 
 matrix3_rotate_object_to_tangent :: proc "contextless" (surface_normal: Vec3) -> Mat3 {
+	USE_HOUSEHOLDER :: false
 	UP :: Vec3{0, 0, 1}
-	perp := linalg.cross(surface_normal, UP)
-	angle := linalg.dot(surface_normal, UP) / linalg.length(surface_normal)
-	return linalg.matrix3_rotate(angle, perp)
+	when USE_HOUSEHOLDER {
+		return rotate_from_to(surface_normal, UP)
+	} else {
+		perp := linalg.cross(surface_normal, UP)
+		angle := linalg.dot(surface_normal, UP) / linalg.length(surface_normal)
+		return linalg.matrix3_rotate(angle, perp)
+	}
 }
 
 matrix3_householder :: proc "contextless" (v: Vec3) -> Mat3 {
@@ -37,6 +43,7 @@ matrix3_householder :: proc "contextless" (v: Vec3) -> Mat3 {
 }
 
 matrix3_rotate_from_to :: proc "contextless" (f, t: Vec3) -> Mat3 {
+	// Copied from PBR v4 section 3.9.8   Rotating One Vector to Another
 	refl: Vec3
 	if math.abs(f.x) < 0.72 && math.abs(t.x) < 0.72 {
 		refl = Vec3{1, 0, 0}
@@ -45,6 +52,8 @@ matrix3_rotate_from_to :: proc "contextless" (f, t: Vec3) -> Mat3 {
 	} else {
 		refl = Vec3{0, 0, 1}
 	}
+
+	// TODO do this with the simplified formula from PBR book
 
 	// \( \vectorbold{H}(r - t) \vectorbold{H}(r - f) \)
 	//
@@ -57,6 +66,8 @@ Vec2 :: linalg.Vector2f32
 
 Point3 :: distinct Vec3
 Point2 :: distinct Vec2
+
+Normal3 :: distinct Vec3
 
 // RGBA
 Color :: distinct [4]f32
@@ -111,10 +122,10 @@ pixel_mul :: proc "contextless" (p, q: Pixel) -> Color {
 	return a.rgba * b.rgba
 }
 
-colorize_normal_vec :: proc "contextless" (n: Vec3) -> Color {
+colorize_normal_vec :: proc "contextless" (n: Normal3) -> Color {
 	// n: [-1,1] for xyz
 	// r: [0,1] for xyz
-	r := 0.5 * (n + Vec3{1, 1, 1}) //r for remapped
+	r := 0.5 * (n + Normal3{1, 1, 1}) //r for remapped
 	return Color{r.x, r.y, r.z, 1.0}
 }
 

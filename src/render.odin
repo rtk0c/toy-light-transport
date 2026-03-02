@@ -45,12 +45,12 @@ Intersection :: struct {
 	// Which object did we hit?
 	obj_id: int,
 	// Where is the intersection, as parameter t along the ray \( P(t) = x_0 + dt \)? (The ray used to generated this intersection.)
-	// Note that t is independent of the corredinate system, i.e. stays the same whether the ray is represented in camera-world space or object space.
+	// Note that t is independent of the coordinate system, i.e. stays the same whether the ray is represented in camera-world space or object space.
 	t:      f32,
 	// Where is the intersection, in view-world space?
 	pt:     Point3,
-	// Surface normal at the
-	normal: Vec3,
+	// Surface normal at the point of intersection
+	normal: Normal3,
 }
 
 isect_empty :: proc(isect: Intersection) -> bool {
@@ -60,7 +60,7 @@ isect_empty :: proc(isect: Intersection) -> bool {
 // Generate new ray, relative to the tip of surface normal at intersection.
 // Returned Ray in camera-world space.
 isect_spawn_ray :: proc(isect: Intersection, v: Vec3) -> Ray {
-	return Ray{origin = isect.pt, dir = isect.normal}
+	return Ray{origin = isect.pt, dir = Vec3(isect.normal)}
 }
 
 intersect_ray_with_world :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Intersection {
