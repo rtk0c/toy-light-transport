@@ -64,6 +64,12 @@ Vec4 :: linalg.Vector4f32
 Vec3 :: linalg.Vector3f32
 Vec2 :: linalg.Vector2f32
 
+// Alias some commonly used functions here, to save some typing
+dot :: linalg.dot
+cross :: linalg.cross
+normalize :: linalg.normalize
+length :: linalg.length
+
 Point3 :: distinct Vec3
 Point2 :: distinct Vec2
 

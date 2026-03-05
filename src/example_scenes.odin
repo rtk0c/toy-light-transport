@@ -4,10 +4,10 @@ import "core:math"
 import "core:math/linalg"
 
 example_basic_camera_setup :: proc(camera: ^Camera) {
+	camera.horz_fov = 70.0 * math.RAD_PER_DEG
 	camera.pos = Vec3{-3, -3, 2}
 	// TODO fix if camera is looking directly down, everything vanishes
 	// camera.pos = Vec3{0, 0.001, 3}
-	camera.horz_fov = 70.0 * math.RAD_PER_DEG
 	camera_look_at(camera, Vec3{0, 0, 0})
 }
 
@@ -52,6 +52,35 @@ example_basic_world :: proc() -> ^World {
 	add_obj(world, Transform{rot, linalg.inverse(rot), Vec3{0, 0, 0.5}}, SceneObject{shape = s05, material = m3})
 	// rot = linalg.matrix3_rotate(math.PI*3/2, Vec3{1,1,1})
 	// add_obj(world, Transform{rot, linalg.inverse(rot), Vec3{0, -1, 0.5}}, SceneObject{shape = s05, material = m3})
+
+	return world
+}
+
+example_mirror_camera_setup :: proc(camera: ^Camera) {
+	camera.horz_fov = 70.0 * math.RAD_PER_DEG
+	camera.pos = Vec3{-3, 0, 2}
+	camera_look_at(camera, Vec3{0, 0, 0})
+}
+
+example_mirror_world :: proc() -> ^World {
+	world := make_world()
+	world.skybox.sky_color = rgba(162, 224, 242, 1)
+
+	add_obj :: proc(world: ^World, pos: Vec3, s: $T) {
+		append(&world.scene_objects, s)
+		append(&world.transforms, Transform{1, 1, pos})
+	}
+
+	// Ground
+	add_obj(world, Vec3{0, 0, -50}, SceneObject{shape = Sphere{radius = 50}, material = DiffuseMaterial{reflectance = rgba(104, 186, 142, 1) }},)
+
+	// 2 mirrors on the side showing 1 diffuse in the middle
+	s05 := Sphere{radius = 0.5}
+	mirror := MirrorMaterial{reflectance = Color{0.98, 0.98, 0.98, 1}}
+	diff := DiffuseMaterial{reflectance = rgba(223, 141, 54, 1)}
+	add_obj(world, Vec3{0, 1, 0.5}, SceneObject{shape = s05, material = mirror})
+	add_obj(world, Vec3{-0.5, 0, 0.5}, SceneObject{shape = s05, material = diff})
+	add_obj(world, Vec3{0, -1, 0.5}, SceneObject{shape = s05, material = mirror})
 
 	return world
 }

@@ -124,7 +124,9 @@ DiffuseMaterial :: struct {
 	reflectance: Color,
 }
 
-MirrorMaterial :: struct {}
+MirrorMaterial :: struct {
+	reflectance: Color,
+}
 
 SceneObject :: struct {
 	shape:    union {
@@ -177,18 +179,28 @@ bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3, ωo, ωi: Vec3) 
 	return Color{}
 }
 
-sample_bsdf_at :: proc(so: ^SceneObject, pos, normal: Normal3, ωo, ωi: Vec3) -> Vec3 {
+// Determine (light, ωi) for the given ωo.
+//
+// Note this corresponds to the BxDF::Sample_f() function from PBRT.
+//
+// Note that this function could also be defined in reverse: determine ωo for a given ωi,
+// but since the path tracing algorithm simulates reverse time ("light" comes out of the camera and ends at light sources),
+// it is more convenient to have it defined this way.
+sample_bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3, ωo: Vec3) -> (Color, Vec3) {
 	switch &material in so.material {
 	case NormalDebugMaterial:
 	case PureColorMaterial:
 	case DiffuseMaterial:
-		// TODO
-		return 0
+		ωi := Vec3(normal) + rand_unit_vec()
+		return material.reflectance, ωi
 	case MirrorMaterial:
-		return 0
+		// Reflect across the normal
+		n := Vec3(normal)
+		ωi := ωo - 2*dot(ωo, n)*n
+		return material.reflectance, ωi
 	}
 
-	return Vec3{}
+	return Color{}, Vec3{}
 }
 
 // Ray in object space.

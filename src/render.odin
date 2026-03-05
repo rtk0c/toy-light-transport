@@ -88,7 +88,7 @@ intersect_ray_with_world :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Inter
 	return isect
 }
 
-integrate_camera_ray :: proc(
+integrate_random_walk :: proc(
 	cam: ^Camera,
 	world: ^World,
 	ray: Ray,
@@ -122,7 +122,44 @@ integrate_camera_ray :: proc(
 		return light_emitted
 	}
 	light_scattered :=
-		light_emitted + fcos * integrate_camera_ray(cam, world, next_ray, remaining_bounces - 1)
+		light_emitted + fcos * integrate_random_walk(cam, world, next_ray, remaining_bounces - 1)
+
+	return light_scattered
+}
+
+integrate_simple :: proc(
+	cam: ^Camera,
+	world: ^World,
+	ray: Ray,
+	remaining_bounces: int,
+) -> Color {
+	isect := intersect_ray_with_world(cam, world, ray)
+	if isect_empty(isect) {
+		return world.skybox.sky_color
+	}
+
+	so := &world.scene_objects[isect.obj_id]
+	wst := world.transforms[isect.obj_id]
+
+	// Also in object space
+	hit_pt := tr_CW_to_object(isect.pt, cam, wst)
+	hit_normal := isect.normal
+	light_emitted := light_emitted_at(so, hit_pt, hit_normal)
+
+	if remaining_bounces <= 0 {
+		return light_emitted
+	}
+
+	ωo := -ray.dir
+
+	fcos, ωp := sample_bsdf_at(so, hit_pt, hit_normal, ωo)
+	if fcos == 0.0 {
+		return light_emitted
+	}
+
+	next_ray := isect_spawn_ray(isect, ωp)
+	light_scattered :=
+		light_emitted + fcos * integrate_simple(cam, world, next_ray, remaining_bounces - 1)
 
 	return light_scattered
 }
@@ -188,7 +225,7 @@ render :: proc(
 				// In camera-world space
 				ray := Ray{Point3(0), pixel_center}
 
-				c := integrate_camera_ray(cam, world, ray, rp.max_bounces)
+				c := integrate_simple(cam, world, ray, rp.max_bounces)
 				// Radiance doesn't carry alpha. In any rendered image, the final alpha must be 1.
 				// For convenience the light transport code path also uses the 4-component RGBA color, but the alpha channel could be removed.
 				c.a = 1.0
