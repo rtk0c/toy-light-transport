@@ -88,13 +88,11 @@ intersect_ray_with_world :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Inter
 	return isect
 }
 
-DEFAULT_MAX_BOUNCES :: 10
-
 integrate_camera_ray :: proc(
 	cam: ^Camera,
 	world: ^World,
 	ray: Ray,
-	remaining_bounces: int = DEFAULT_MAX_BOUNCES,
+	remaining_bounces: int,
 ) -> Color {
 	isect := intersect_ray_with_world(cam, world, ray)
 	if isect_empty(isect) {
@@ -129,17 +127,27 @@ integrate_camera_ray :: proc(
 	return light_scattered
 }
 
-render :: proc(
+RenderParams :: struct {
 	cam: ^Camera,
 	world: ^World,
 	samples_per_pixel: int,
+	max_bounces: int,
 
 	// Dimension of the rendered image, in pixels.
 	// Aspect ratio `f32(viewport_width) / f32(viewport_height)` should match the `Camera.aspect_ratio` used for rendering.
 	// `viewport_width * viewport_height` should match length of `image`.
 	viewport_width, viewport_height: int,
+}
+
+render :: proc(
+	rp: ^RenderParams,
 	image: []Pixel,
 ) {
+	cam := rp.cam
+	world := rp.world
+	viewport_width := rp.viewport_width
+	viewport_height := rp.viewport_height
+
 	// In camera-world space, shoot rays and perform intersection tests.
 	// In object space, do radiometry stuff.
 
@@ -163,12 +171,12 @@ render :: proc(
 	pixel_delta_x := vp_horz / f32(viewport_width)
 	pixel_delta_y := vp_vert / f32(viewport_height)
 
-	sample_scaling_factor := 1 / f32(samples_per_pixel)
+	sample_scaling_factor := 1 / f32(rp.samples_per_pixel)
 
 	for y in 0 ..< viewport_height {
 		for x in 0 ..< viewport_width {
 			accum := Color{}
-			for _ in 0 ..< samples_per_pixel {
+			for _ in 0 ..< rp.samples_per_pixel {
 				sample_x_off := rand.float32_uniform(0, 1)
 				sample_y_off := rand.float32_uniform(0, 1)
 
@@ -180,7 +188,7 @@ render :: proc(
 				// In camera-world space
 				ray := Ray{Point3(0), pixel_center}
 
-				c := integrate_camera_ray(cam, world, ray)
+				c := integrate_camera_ray(cam, world, ray, rp.max_bounces)
 				// Radiance doesn't carry alpha. In any rendered image, the final alpha must be 1.
 				// For convenience the light transport code path also uses the 4-component RGBA color, but the alpha channel could be removed.
 				c.a = 1.0
