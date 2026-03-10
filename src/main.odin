@@ -15,8 +15,8 @@ main :: proc() {
 	rand.reset(0x531864e09a8e25d6)
 
 	// TODO controllable from cli arg
-	image_width := 160*2
-	image_height := 90*2
+	image_width := 160
+	image_height := 90
 	image_aspect_ratio := f32(image_width) / f32(image_height)
 
 	world := example_mirror_world()
@@ -29,7 +29,7 @@ main :: proc() {
 	rp := RenderParams{
 		cam = &camera,
 		world = world,
-		samples_per_pixel = 100,
+		samples_per_pixel = 50,
 		max_bounces = 10,
 
 		viewport_width = image_width, 

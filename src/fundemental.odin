@@ -24,22 +24,20 @@ matrix3_rotate_object_to_tangent :: proc "contextless" (surface_normal: Vec3) ->
 	USE_HOUSEHOLDER :: false
 	UP :: Vec3{0, 0, 1}
 	when USE_HOUSEHOLDER {
-		return rotate_from_to(surface_normal, UP)
+		return matrix3_rotate_from_to(surface_normal, UP)
 	} else {
-		perp := linalg.cross(surface_normal, UP)
-		angle := linalg.dot(surface_normal, UP) / linalg.length(surface_normal)
+		perp := cross(surface_normal, UP)
+		angle := dot(surface_normal, UP) / length(surface_normal)
 		return linalg.matrix3_rotate(angle, perp)
 	}
 }
 
 matrix3_householder :: proc "contextless" (v: Vec3) -> Mat3 {
 	I := linalg.identity_matrix(Mat3)
-	v2 := linalg.dot(v, v)
-	vvT := linalg.outer_product(v, v)
 
 	// \( \vectorbold{I} - \frac{2}{\vectorbold{v} \cdot \vectorbold{v}} \vectorbold{v} \vectorbold{v}^T \)
 	//
-	return I - (2 / v2) * vvT
+	return I - (2 / dot(v, v)) * linalg.outer_product(v, v)
 }
 
 matrix3_rotate_from_to :: proc "contextless" (f, t: Vec3) -> Mat3 {

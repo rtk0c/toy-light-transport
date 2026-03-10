@@ -218,7 +218,7 @@ Sphere :: struct {
 }
 
 sphere_surface_normal_at :: proc(sphere: ^Sphere, pt: Point3) -> Normal3 {
-	return Normal3(linalg.normalize(pt))
+	return Normal3(normalize(pt))
 }
 
 sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> f32 {
@@ -227,9 +227,9 @@ sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> f32 {
 
 	r := sphere.radius
 
-	a := linalg.dot(rd, rd)
-	b := 2 * linalg.dot(rd, ro)
-	c := linalg.dot(ro, ro) - r * r
+	a := dot(rd, rd)
+	b := 2 * dot(rd, ro)
+	c := dot(ro, ro) - r * r
 	r1, r2 := solve_quadratic_real(a, b, c)
 	// Doesn't hit
 	if math.is_nan(r1) {

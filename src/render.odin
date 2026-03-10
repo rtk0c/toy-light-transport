@@ -117,7 +117,8 @@ integrate_random_walk :: proc(
 
 	// Otherwise, continue to next bounce
 	next_ray := isect_spawn_ray(isect, ωp)
-	fcos := bsdf_at(so, hit_pt, hit_normal, ωo, ωp) // * math.abs(linalg.dot(hit_normal, ωp))
+	fcos := bsdf_at(so, hit_pt, hit_normal, ωo, ωp) 
+	// fcos *= math.abs(dot(Vec3(hit_normal), ωp))
 	if fcos == 0.0 {
 		return light_emitted
 	}
