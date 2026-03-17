@@ -107,25 +107,30 @@ integrate_random_walk :: proc(
 	hit_normal := isect.normal
 	light_emitted := light_emitted_at(so, hit_pt, hit_normal)
 
-	// At recursion limit, just return current contribution
+	// ★ At recursion limit, just return current contribution
 	if remaining_bounces <= 0 {
 		return light_emitted
 	}
 
+	// Direction of outgoing light. (incoming direction for this ray tracing process, since time is reversed)
 	ωo := -ray.dir
+	// Direction of incident light.
+	// This is the "random walk" part: at every intersection, bounce the light at a completely new direction to do Monte Carlo.
 	ωp := rand_unit_vec()
 
-	// Otherwise, continue to next bounce
-	next_ray := isect_spawn_ray(isect, ωp)
-	fcos := bsdf_at(so, hit_pt, hit_normal, ωo, ωp) 
-	// fcos *= math.abs(dot(Vec3(hit_normal), ωp))
-	if fcos == 0.0 {
+	// f_cos: BSDF value with pre-multiplied cos(θ) factor
+	f_cos := bsdf_at(so, hit_pt, hit_normal, ωo, ωp)
+	f_cos *= /* cos(θ), angle between normal and ωp */ abs_dot(Vec3(hit_normal), ωp)
+	if f_cos == 0.0 {
 		return light_emitted
 	}
-	light_scattered :=
-		light_emitted + fcos * integrate_random_walk(cam, world, next_ray, remaining_bounces - 1)
 
-	return light_scattered
+	// ★ Otherwise, continue to next bounce
+	next_ray := isect_spawn_ray(isect, ωp)
+
+	SCALING_FACTOR :: 4 * math.PI
+	return light_emitted +
+		f_cos * integrate_random_walk(cam, world, next_ray, remaining_bounces - 1) * SCALING_FACTOR
 }
 
 integrate_simple :: proc(
@@ -226,7 +231,7 @@ render :: proc(
 				// In camera-world space
 				ray := Ray{Point3(0), pixel_center}
 
-				c := integrate_simple(cam, world, ray, rp.max_bounces)
+				c := integrate_random_walk(cam, world, ray, rp.max_bounces)
 				// Radiance doesn't carry alpha. In any rendered image, the final alpha must be 1.
 				// For convenience the light transport code path also uses the 4-component RGBA color, but the alpha channel could be removed.
 				c.a = 1.0

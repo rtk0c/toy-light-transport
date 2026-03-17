@@ -62,8 +62,26 @@ Vec4 :: linalg.Vector4f32
 Vec3 :: linalg.Vector3f32
 Vec2 :: linalg.Vector2f32
 
+// Are the vectors both above the XY plane, or both below?
+// Note that in tangent space, the normal vector is always Vec{0,0,1}.
+tan_sp_same_hemisphere :: proc(a, b: Vec3) -> bool {
+	return a.z * b.z > 0
+}
+
+// Angles mentioned below are spherical coordinates. ω is a unit vector.
+// θ: angle ω makes with the normal
+// φ: angle ω makes with X axis, going counter-clockwise
+tan_sp_cosθ :: proc(ω: Vec3) -> f32 {return ω.z}
+tan_sp_cos2θ :: proc(ω: Vec3) -> f32 {return sq(ω.z)}
+tan_sp_sin2θ :: proc(ω: Vec3) -> f32 {return 1 - tan_sp_cos2θ(ω)} // TODO PBRT adds max(0, ...) to avoid negative caused by rounding errors
+tan_sp_sinθ :: proc(ω: Vec3) -> f32 {return sqrt(tan_sp_sin2θ(ω))}
+
 // Alias some commonly used functions here, to save some typing
+sq :: proc(x: $T) -> T {return x * x}
+sqrt :: linalg.sqrt // NOTE: sqrt, abs, etc. equivalents in core:math/linalg are just component-wise operations
 dot :: linalg.dot
+abs :: linalg.abs
+abs_dot :: proc "contextless" (a, b: $T/[$N]$E) -> E {return abs(dot(a, b))}
 cross :: linalg.cross
 normalize :: linalg.normalize
 length :: linalg.length

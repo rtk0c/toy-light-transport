@@ -19,11 +19,11 @@ main :: proc() {
 	image_height := 90
 	image_aspect_ratio := f32(image_width) / f32(image_height)
 
-	world := example_mirror_world()
+	world := example_basic_world()
 
 	camera := make_camera()
 	camera.aspect_ratio = image_aspect_ratio
-	example_mirror_camera_setup(&camera)
+	example_basic_camera_setup(&camera)
 
 	image := make([dynamic]Pixel, image_width * image_height)
 	rp := RenderParams{

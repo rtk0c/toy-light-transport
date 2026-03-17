@@ -162,16 +162,24 @@ light_emitted_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3) -> Colo
 	return Color{}
 }
 
-// Position in object space.
+// Position, normal, and in/out directions in object space.
 bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3, ωo, ωi: Vec3) -> Color {
+	o2t := matrix3_rotate_object_to_tangent(Vec3(normal))
+	t2o := linalg.inverse(o2t)
+
+	t_pos := o2t * pos
+	t_ωo := o2t * ωo
+	t_ωi := o2t * ωi
+
 	switch &material in so.material {
 	case NormalDebugMaterial:
 	case PureColorMaterial:
 		return 0
 	case DiffuseMaterial:
-		// TODO reject sample if ωo and ωi are not in the same hemisphere
-		// return material.reflectance / math.PI
-		return material.reflectance
+		if !tan_sp_same_hemisphere(ωo, ωi) {
+			return 0
+		}
+		return material.reflectance / math.PI
 	case MirrorMaterial:
 		return 0
 	}
