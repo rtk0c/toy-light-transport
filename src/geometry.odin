@@ -176,7 +176,7 @@ bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3, ωo, ωi: Vec3) 
 	case PureColorMaterial:
 		return 0
 	case DiffuseMaterial:
-		if !tan_sp_same_hemisphere(ωo, ωi) {
+		if !tan_sp_same_hemisphere(t_ωo, t_ωi) {
 			return 0
 		}
 		return material.reflectance / math.PI
