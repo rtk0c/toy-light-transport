@@ -63,7 +63,8 @@ isect_empty :: proc(isect: Intersection) -> bool {
 // Generate new ray, relative to the tip of surface normal at intersection.
 // Returned Ray in camera-world space.
 isect_spawn_ray :: proc(isect: Intersection, v: Vec3) -> Ray {
-	return Ray{origin = isect.pt, dir = Vec3(isect.normal)}
+	n := Vec3(isect.normal)
+	return Ray{origin = isect.pt, dir = n + v}
 }
 
 intersect_ray_with_world :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Intersection {

@@ -1,8 +1,16 @@
 package iacta
 
+import "base:intrinsics"
 import "core:math"
 import "core:math/linalg"
 import "core:math/rand"
+
+IS_NUMERIC :: intrinsics.type_is_numeric
+IS_QUATERNION :: intrinsics.type_is_quaternion
+IS_ARRAY :: intrinsics.type_is_array
+IS_FLOAT :: intrinsics.type_is_float
+BASE_TYPE :: intrinsics.type_base_type
+ELEM_TYPE :: intrinsics.type_elem_type
 
 // Solve the quadratic equation ax^2 + bx + c for Reals x_1, x_2.
 // If there are two distinct real solutions, x_1 < x_2.
@@ -19,7 +27,7 @@ solve_quadratic_real :: proc(a, b, c: f32) -> (f32, f32) {
 Mat4 :: linalg.Matrix4x4f32
 Mat3 :: linalg.Matrix3x3f32
 
-// Compute the transform from object space into tangent space 
+// Compute the transform from object space into tangent space
 matrix3_rotate_object_to_tangent :: proc "contextless" (surface_normal: Vec3) -> Mat3 {
 	USE_HOUSEHOLDER :: false
 	UP :: Vec3{0, 0, 1}
@@ -73,12 +81,21 @@ tan_sp_same_hemisphere :: proc(a, b: Vec3) -> bool {
 // φ: angle ω makes with X axis, going counter-clockwise
 tan_sp_cosθ :: proc(ω: Vec3) -> f32 {return ω.z}
 tan_sp_cos2θ :: proc(ω: Vec3) -> f32 {return sq(ω.z)}
-tan_sp_sin2θ :: proc(ω: Vec3) -> f32 {return 1 - tan_sp_cos2θ(ω)} // TODO PBRT adds max(0, ...) to avoid negative caused by rounding errors
+tan_sp_sin2θ :: proc(ω: Vec3) -> f32 {return 1 - tan_sp_cos2θ(ω)} 	// TODO PBRT adds max(0, ...) to avoid negative caused by rounding errors
 tan_sp_sinθ :: proc(ω: Vec3) -> f32 {return sqrt(tan_sp_sin2θ(ω))}
 
 // Alias some commonly used functions here, to save some typing
 pow :: linalg.pow
-sq :: proc(x: $T) -> T {return x * x}
+sq :: proc(x: $T) -> (out: T) {
+	when IS_ARRAY(T) {
+		for i in 0..<len(T) {
+			out[i] = x[i] * x[i]
+		}
+	} else {
+		out = x * x
+	}
+	return
+}
 sqrt :: linalg.sqrt // NOTE: sqrt, abs, etc. equivalents in core:math/linalg are just component-wise operations
 dot :: linalg.dot
 abs :: linalg.abs
@@ -104,32 +121,38 @@ RED_PIXEL :: Pixel{255, 0, 0, 0xFF}
 GREEN_PIXEL :: Pixel{0, 255, 0, 0xFF}
 BLUE_PIXEL :: Pixel{0, 0, 255, 0xFF}
 
-linear_to_sRGB_component :: proc "contextless" (L: f32) -> f32 {
-	if (L <= 0.00031308) { 
-		return 12.92 * L;
-	} else {
-		return 1.055 * pow(L, 1.0 / 2.4) - 0.055;
-	}
-}
+linear_to_gamma_pow22 :: proc "contextless" (L: $T) -> T {return pow(L, 1 / 2.2)}
+gamma_to_linear_pow22 :: proc "contextless" (G: $T) -> T {return pow(G, 2.2)}
 
-linear_to_sRGB :: proc "contextless" (linear: Color) -> (srgb: Color) {
-	for i in 0..<len(linear) {
-		srgb[i] = linear_to_sRGB_component(linear[i])
+linear_to_gamma_sqrt :: proc "contextless" (L: $T) -> T {return sqrt(L)}
+gamma_to_linear_sqrt :: proc "contextless" (G: $T) -> T {return sq(G)}
+
+linear_to_sRGB :: proc "contextless" (L: $T) -> (S: T) {
+	when IS_ARRAY(T) {
+		for i in 0 ..< len(L) {
+			S[i] = linear_to_sRGB(L[i])
+		}
+	} else {
+		if (L <= 0.00031308) {
+			S = 12.92 * L
+		} else {
+			S = 1.055 * pow(L, 1.0 / 2.4) - 0.055
+		}
 	}
 	return
 }
 
-sRGB_to_linear_component :: proc "contextless" (S: f32) -> f32 {
-	if (S <= 0.04045) {
-		return S / 12.92;
+sRGB_to_linear :: proc "contextless" (S: $T) -> (L: T) {
+	when IS_ARRAY(T) {
+		for i in 0 ..< len(S) {
+			L[i] = sRGB_to_linear_component(S[i])
+		}
 	} else {
-		return pow((S + 0.055) / 1.055, 2.4);
-	}
-}
-
-sRGB_to_linear :: proc "contextless" (srgb: Color) -> (linear: Color) {
-	for i in 0..<len(srgb) {
-		linear[i] = sRGB_to_linear_component(srgb[i])
+		if (S <= 0.04045) {
+			L = S / 12.92
+		} else {
+			L = pow((S + 0.055) / 1.055, 2.4)
+		}
 	}
 	return
 }
@@ -208,8 +231,8 @@ rand_pt_in_circle :: proc(r: f32 = 1.0) -> Vec2 {
 	}
 }
 
-rand_pt_in_sphere :: proc(r: f32 = 1.0) ->  Vec3 {// rejection method: rand pt in cube, retry if not inside sphere
-
+rand_pt_in_sphere :: proc(r: f32 = 1.0) -> Vec3 {
+	// rejection method: rand pt in cube, retry if not inside sphere
 	rSq := r * r
 	for {
 		x := rand.float32_uniform(-r, r)

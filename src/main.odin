@@ -1,6 +1,5 @@
 package iacta
 
-import "core:math"
 import "core:math/rand"
 import stbi "vendor:stb/image"
 
@@ -15,8 +14,8 @@ main :: proc() {
 	rand.reset(0x531864e09a8e25d6)
 
 	// TODO controllable from cli arg
-	image_width := 160
-	image_height := 90
+	image_width := 160*2
+	image_height := 90*2
 	image_aspect_ratio := f32(image_width) / f32(image_height)
 
 	world := example_gamma_test_world()
@@ -39,10 +38,10 @@ main :: proc() {
 
 	// Gamma correction
 	// TODO image looks right with this off, but wrong with this on?
-	ENABLE_GAMMA_CORRECTION :: false
+	ENABLE_GAMMA_CORRECTION :: true
 	when ENABLE_GAMMA_CORRECTION {
 		for &pixel in image {
-			pixel = linear_to_sRGB(pixel)
+			pixel = linear_to_gamma_sqrt(pixel)
 		}
 	}
 
