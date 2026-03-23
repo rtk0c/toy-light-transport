@@ -13,7 +13,7 @@ example_basic_camera_setup :: proc(camera: ^Camera) {
 
 example_basic_world :: proc() -> ^World {
 	world := make_world()
-	world.skybox.sky_color = rgba(162, 224, 242, 1)
+	world.skybox.sky_color = rgb(162, 224, 242)
 
 	add_obj :: proc(world: ^World, t: Transform, s: $T) {
 		append(&world.scene_objects, s)
@@ -28,7 +28,7 @@ example_basic_world :: proc() -> ^World {
 		SceneObject {
 			shape = Sphere{radius = 50},
 			// material = DiffuseMaterial{reflectance = 0.5},
-			material = DiffuseMaterial{reflectance = rgba(104, 186, 142, 1) },
+			material = DiffuseMaterial{reflectance = rgb(104, 186, 142) },
 			// material = NormalDebugMaterial{},
 		},
 	)
@@ -37,8 +37,8 @@ example_basic_world :: proc() -> ^World {
 		add_obj_p(world, pos, SceneObject{shape = s, material = m})
 	}
 	m1 := DiffuseMaterial{reflectance = 0.8}
-	m1orange := DiffuseMaterial{reflectance = rgba(223, 141, 54, 1) }
-	m2 := PureColorMaterial{color = rgba(223, 141, 54, 1)  }
+	m1orange := DiffuseMaterial{reflectance = rgb(223, 141, 54) }
+	m2 := PureColorMaterial{color = rgb(223, 141, 54)  }
 	m3 := NormalDebugMaterial{}
 	s05 := Sphere{radius = 0.5}
 	// add_obj_s(world, Vec3{0, 0, 0}, Sphere{radius = 0.5})
@@ -64,7 +64,7 @@ example_mirror_camera_setup :: proc(camera: ^Camera) {
 
 example_mirror_world :: proc() -> ^World {
 	world := make_world()
-	world.skybox.sky_color = rgba(162, 224, 242, 1)
+	world.skybox.sky_color = rgb(162, 224, 242)
 
 	add_obj :: proc(world: ^World, pos: Vec3, s: $T) {
 		append(&world.scene_objects, s)
@@ -72,12 +72,12 @@ example_mirror_world :: proc() -> ^World {
 	}
 
 	// Ground
-	add_obj(world, Vec3{0, 0, -50}, SceneObject{shape = Sphere{radius = 50}, material = DiffuseMaterial{reflectance = rgba(104, 186, 142, 1) }},)
+	add_obj(world, Vec3{0, 0, -50}, SceneObject{shape = Sphere{radius = 50}, material = DiffuseMaterial{reflectance = rgb(104, 186, 142) }},)
 
 	// 2 mirrors on the side showing 1 diffuse in the middle
 	s05 := Sphere{radius = 0.5}
 	mirror := MirrorMaterial{reflectance = Color{0.98, 0.98, 0.98, 1}}
-	diff := DiffuseMaterial{reflectance = rgba(223, 141, 54, 1)}
+	diff := DiffuseMaterial{reflectance = rgb(223, 141, 54)}
 	add_obj(world, Vec3{0, 1, 0.5}, SceneObject{shape = s05, material = mirror})
 	add_obj(world, Vec3{-0.5, 0, 0.5}, SceneObject{shape = s05, material = diff})
 	add_obj(world, Vec3{0, -1, 0.5}, SceneObject{shape = s05, material = mirror})
@@ -94,9 +94,9 @@ example_gamma_test_camera_setup :: proc(camera: ^Camera) {
 
 example_gamma_test_world :: proc() -> ^World {
 	world := make_world()
-	world.skybox.sky_color = rgba(128, 178, 255, 1)
+	world.skybox.sky_color = rgb(128, 178, 255)
 
-	diffuse := DiffuseMaterial{reflectance = rgba(127, 127, 127, 1)}
+	diffuse := DiffuseMaterial{reflectance = rgb(127, 127, 127)}
 	// Object to look at
 	append(&world.scene_objects, SceneObject{shape = Sphere{radius = 0.5}, material = diffuse})
 	append(&world.transforms, Transform{1, 1, Vec3{0, 0, 0}})

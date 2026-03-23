@@ -165,6 +165,7 @@ hex :: proc "contextless" (v: u32) -> Color {
 
 // Conveniently, VSCode provides us a color picker for expressions like rgba(0-255, 0-255, 0-255, 0-1)
 // So let's name our functions like this
+rgb :: proc "contextless" (r, g, b: u8) -> Color {return rgba(r, g, b, 1)}
 rgba :: proc "contextless" (r, g, b: u8, a: f32) -> Color {
 	return Color{f32(r) / 0xFF, f32(g) / 0xFF, f32(b) / 255, a}
 }
