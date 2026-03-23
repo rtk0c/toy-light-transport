@@ -11,7 +11,7 @@ clean:
 
 $(OUTPUT)/iacta: $(SOURCES)
 	@mkdir -p $(OUTPUT)
-	odin build src -debug -out:$(OUTPUT)/iacta
+	odin build src -debug -o:speed -out:$(OUTPUT)/iacta
 
 render: $(OUTPUT)/iacta
 	$(OUTPUT)/iacta
