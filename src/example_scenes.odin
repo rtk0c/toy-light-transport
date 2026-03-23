@@ -1,5 +1,6 @@
 package iacta
 
+import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 
@@ -56,6 +57,32 @@ example_basic_world :: proc() -> ^World {
 	return world
 }
 
+example_basic :: proc() -> (image: [dynamic]Color, width, height: int) {
+	width = 16*80
+	height = 9*80
+	image = make([dynamic]Color, width * height)
+
+	world := example_basic_world()
+
+	camera := make_camera()
+	camera.aspect_ratio = f32(width) / f32(height)
+	example_basic_camera_setup(&camera)
+
+	rp := RenderParams{
+		cam = &camera,
+		world = world,
+		samples_per_pixel = 20,
+		max_bounces = 10,
+
+		viewport_width = width, 
+		viewport_height = height,
+	}
+	rt := make_default_render_target(image[:], &rp)
+	render(&rp, &rt)
+
+	return
+}
+
 example_mirror_camera_setup :: proc(camera: ^Camera) {
 	camera.horz_fov = 70.0 * math.RAD_PER_DEG
 	camera.pos = Vec3{-3, 0, 2}
@@ -85,6 +112,32 @@ example_mirror_world :: proc() -> ^World {
 	return world
 }
 
+example_mirror :: proc() -> (image: [dynamic]Color, width, height: int) {
+	width = 16*20
+	height = 9*20
+	image = make([dynamic]Color, width * height)
+
+	world := example_mirror_world()
+
+	camera := make_camera()
+	camera.aspect_ratio = f32(width) / f32(height)
+	example_mirror_camera_setup(&camera)
+
+	rp := RenderParams{
+		cam = &camera,
+		world = world,
+		samples_per_pixel = 50,
+		max_bounces = 10,
+
+		viewport_width = width, 
+		viewport_height = height,
+	}
+	rt := make_default_render_target(image[:], &rp)
+	render(&rp, &rt)
+
+	return
+}
+
 example_gamma_test_camera_setup :: proc(camera: ^Camera) {
 	camera.focal_length = 1
 	camera.horz_fov = 90.0 * math.RAD_PER_DEG
@@ -105,4 +158,48 @@ example_gamma_test_world :: proc() -> ^World {
 	append(&world.transforms, Transform{1, 1, Vec3{0, 0, -100.5}})
 
 	return world
+}
+
+example_gamma_test :: proc() -> (image: [dynamic]Color, width, height: int) {
+	width = 16*20 // when changing this, keep a factor of 5 so we don't get rounding errors :)
+	height = 9*20
+	image = make([dynamic]Color, width * height)
+
+	world := example_gamma_test_world()
+
+	camera := make_camera()
+	camera.aspect_ratio = f32(width) / f32(height)
+	example_gamma_test_camera_setup(&camera)
+
+	rp := RenderParams{
+		cam = &camera,
+		world = world,
+		samples_per_pixel = 50,
+		max_bounces = 10,
+
+		viewport_width = width,
+		viewport_height = height,
+	}
+	
+	reflectances := [?]f32{ 0.1, 0.3, 0.5, 0.7, 0.9 }
+	section_width := width / len(reflectances)
+
+	rt := RenderTarget{
+		storage = image[:],
+		line_stride = width,
+		t_y0 = 0,
+		t_y1 = height,
+	}
+	
+	for i in 0 ..< len(reflectances) {
+		// if i == 0 do continue
+		for &so in world.scene_objects {
+			so.material = DiffuseMaterial{reflectance = reflectances[i]}
+		}
+		rt.t_x0 = i * section_width
+		rt.t_x1 = (i+1) * section_width
+		render(&rp, &rt)
+	}
+
+	return
 }

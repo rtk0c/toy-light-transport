@@ -186,9 +186,29 @@ RenderParams :: struct {
 	viewport_width, viewport_height: int,
 }
 
+RenderTarget :: struct {
+	storage: []Color,
+	// Array index offset from one line to the next.
+	// == RenderParams.viewport_width
+	line_stride: int,
+	// The subsection of viewport to render.
+	// Contract: 0 <= t_x0 < t_x1 < viewport_width
+	//           0 <= t_x0 < t_x1 < viewport_height
+	t_x0, t_y0, t_x1, t_y1: int,
+}
+
+make_default_render_target :: proc(image: []Color, rp: ^RenderParams) -> RenderTarget {
+	return RenderTarget{
+		storage = image[:],
+		line_stride = rp.viewport_width,
+		t_x0 = 0, t_y0 = 0,
+		t_x1 = rp.viewport_width, t_y1 = rp.viewport_height,
+	}
+}
+
 render :: proc(
 	rp: ^RenderParams,
-	image: []Color,
+	rt: ^RenderTarget,
 ) {
 	cam := rp.cam
 	world := rp.world
@@ -225,8 +245,8 @@ render :: proc(
 
 	sample_scaling_factor := 1 / f32(rp.samples_per_pixel)
 
-	for y in 0 ..< viewport_height {
-		for x in 0 ..< viewport_width {
+	for y in rt.t_y0 ..< rt.t_y1 {
+		for x in rt.t_x0 ..< rt.t_x1 {
 			accum := Color{}
 			for _ in 0 ..< rp.samples_per_pixel {
 				sample_x_off := rand.float32_uniform(0, 1)
@@ -248,7 +268,7 @@ render :: proc(
 			}
 
 			pixel_color := accum * sample_scaling_factor
-			image[y * viewport_width + x] = pixel_color
+			rt.storage[y * rt.line_stride + x] = pixel_color
 		}
 	}
 }
