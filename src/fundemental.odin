@@ -77,6 +77,7 @@ tan_sp_sin2θ :: proc(ω: Vec3) -> f32 {return 1 - tan_sp_cos2θ(ω)} // TODO PB
 tan_sp_sinθ :: proc(ω: Vec3) -> f32 {return sqrt(tan_sp_sin2θ(ω))}
 
 // Alias some commonly used functions here, to save some typing
+pow :: linalg.pow
 sq :: proc(x: $T) -> T {return x * x}
 sqrt :: linalg.sqrt // NOTE: sqrt, abs, etc. equivalents in core:math/linalg are just component-wise operations
 dot :: linalg.dot
@@ -102,6 +103,36 @@ WHITE_PIXEL :: Pixel{0, 0, 0, 0xFF}
 RED_PIXEL :: Pixel{255, 0, 0, 0xFF}
 GREEN_PIXEL :: Pixel{0, 255, 0, 0xFF}
 BLUE_PIXEL :: Pixel{0, 0, 255, 0xFF}
+
+linear_to_sRGB_component :: proc "contextless" (L: f32) -> f32 {
+	if (L <= 0.00031308) { 
+		return 12.92 * L;
+	} else {
+		return 1.055 * pow(L, 1.0 / 2.4) - 0.055;
+	}
+}
+
+linear_to_sRGB :: proc "contextless" (linear: Color) -> (srgb: Color) {
+	for i in 0..<len(linear) {
+		srgb[i] = linear_to_sRGB_component(linear[i])
+	}
+	return
+}
+
+sRGB_to_linear_component :: proc "contextless" (S: f32) -> f32 {
+	if (S <= 0.04045) {
+		return S / 12.92;
+	} else {
+		return pow((S + 0.055) / 1.055, 2.4);
+	}
+}
+
+sRGB_to_linear :: proc "contextless" (srgb: Color) -> (linear: Color) {
+	for i in 0..<len(srgb) {
+		linear[i] = sRGB_to_linear_component(srgb[i])
+	}
+	return
+}
 
 pixel_denormalize :: proc "contextless" (v: Color) -> Pixel {
 	// Ray Tracing in a Weekend:

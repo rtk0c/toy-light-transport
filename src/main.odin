@@ -25,7 +25,7 @@ main :: proc() {
 	camera.aspect_ratio = image_aspect_ratio
 	example_basic_camera_setup(&camera)
 
-	image := make([dynamic]Pixel, image_width * image_height)
+	image := make([dynamic]Color, image_width * image_height)
 	rp := RenderParams{
 		cam = &camera,
 		world = world,
@@ -37,12 +37,23 @@ main :: proc() {
 	}
 	render(&rp, image[:])
 
+	// Gamma correction
+	for &pixel in image {
+		pixel = linear_to_sRGB(pixel)
+	}
+
+	// [4]f32 to [4]u8 format conversoin
+	image_pixels := make([]Pixel, len(image))
+	for i in 0..<len(image) {
+		image_pixels[i] = pixel_denormalize(image[i])
+	}
+
 	stbi.write_png(
 		"./out/output.png",
 		i32(image_width),
 		i32(image_height),
 		len(Pixel(0)),
-		&image[0],
-		i32(size_of(image[0]) * image_width),
+		&image_pixels[0],
+		i32(size_of(image_pixels[0]) * image_width),
 	)
 }

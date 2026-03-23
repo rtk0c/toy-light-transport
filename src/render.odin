@@ -184,7 +184,7 @@ RenderParams :: struct {
 
 render :: proc(
 	rp: ^RenderParams,
-	image: []Pixel,
+	image: []Color,
 ) {
 	cam := rp.cam
 	world := rp.world
@@ -239,7 +239,7 @@ render :: proc(
 			}
 
 			pixel_color := accum * sample_scaling_factor
-			image[y * viewport_width + x] = pixel_denormalize(pixel_color)
+			image[y * viewport_width + x] = pixel_color
 		}
 	}
 }
