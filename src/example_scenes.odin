@@ -84,3 +84,25 @@ example_mirror_world :: proc() -> ^World {
 
 	return world
 }
+
+example_gamma_test_camera_setup :: proc(camera: ^Camera) {
+	camera.focal_length = 1
+	camera.horz_fov = 90.0 * math.RAD_PER_DEG
+	camera.pos = Vec3{0, 1.5, 0}
+	camera.view = Vec3{0, -1, 0}
+}
+
+example_gamma_test_world :: proc() -> ^World {
+	world := make_world()
+	world.skybox.sky_color = rgba(128, 178, 255, 1)
+
+	diffuse := DiffuseMaterial{reflectance = rgba(127, 127, 127, 1)}
+	// Object to look at
+	append(&world.scene_objects, SceneObject{shape = Sphere{radius = 0.5}, material = diffuse})
+	append(&world.transforms, Transform{1, 1, Vec3{0, 0, 0}})
+	// Ground
+    append(&world.scene_objects, SceneObject{shape = Sphere{radius = 100}, material = diffuse})
+	append(&world.transforms, Transform{1, 1, Vec3{0, 0, -100.5}})
+
+	return world
+}

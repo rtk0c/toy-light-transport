@@ -20,7 +20,10 @@ Camera :: struct {
 	// Distance from camera position to the viewport plane ("near plane" in RT rendering convention)
 	focal_length: f32,
 
-	// Horizontal FOV of the camera.
+	// Horizontal FOV \( θ \) of the camera.
+	//
+	// Vertical FOV \( ϕ = 2\arctan \frac{\tan θ/2}{α} \)
+	//
 	horz_fov:     f32,
 
 	// width/height
@@ -195,6 +198,11 @@ render :: proc(
 	// In object space, do radiometry stuff.
 
 	// Dimensions (in world space) of the focal plane
+
+	// \( \tan\frac{θ}{2} = \frac{w/2}{d} \) => \( w = 2 d \tan\frac{θ}{2} \), similarly for \(h\) and \(ϕ\)
+	//
+	// where w, h, d is fp_width, fp_height, focal_length respectively
+	// θ, ϕ is horz_fov, vert_fov respectively
 	fp_width := 2 * cam.focal_length * math.tan(cam.horz_fov / 2)
 	fp_height := fp_width / cam.aspect_ratio
 
@@ -231,7 +239,7 @@ render :: proc(
 				// In camera-world space
 				ray := Ray{Point3(0), pixel_center}
 
-				c := integrate_random_walk(cam, world, ray, rp.max_bounces)
+				c := integrate_simple(cam, world, ray, rp.max_bounces)
 				// Radiance doesn't carry alpha. In any rendered image, the final alpha must be 1.
 				// For convenience the light transport code path also uses the 4-component RGBA color, but the alpha channel could be removed.
 				c.a = 1.0

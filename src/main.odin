@@ -19,11 +19,11 @@ main :: proc() {
 	image_height := 90
 	image_aspect_ratio := f32(image_width) / f32(image_height)
 
-	world := example_basic_world()
+	world := example_gamma_test_world()
 
 	camera := make_camera()
 	camera.aspect_ratio = image_aspect_ratio
-	example_basic_camera_setup(&camera)
+	example_gamma_test_camera_setup(&camera)
 
 	image := make([dynamic]Color, image_width * image_height)
 	rp := RenderParams{
@@ -38,8 +38,12 @@ main :: proc() {
 	render(&rp, image[:])
 
 	// Gamma correction
-	for &pixel in image {
-		pixel = linear_to_sRGB(pixel)
+	// TODO image looks right with this off, but wrong with this on?
+	ENABLE_GAMMA_CORRECTION :: false
+	when ENABLE_GAMMA_CORRECTION {
+		for &pixel in image {
+			pixel = linear_to_sRGB(pixel)
+		}
 	}
 
 	// [4]f32 to [4]u8 format conversoin
