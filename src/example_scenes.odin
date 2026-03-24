@@ -77,8 +77,8 @@ example_basic :: proc() -> (image: [dynamic]Color, width, height: int) {
 		viewport_width = width, 
 		viewport_height = height,
 	}
-	rt := make_default_render_target(image[:], &rp)
-	render(&rp, &rt)
+	rt := make_default_render_target(image[:], rp)
+	render(rp, rt)
 
 	return
 }
@@ -132,8 +132,8 @@ example_mirror :: proc() -> (image: [dynamic]Color, width, height: int) {
 		viewport_width = width, 
 		viewport_height = height,
 	}
-	rt := make_default_render_target(image[:], &rp)
-	render(&rp, &rt)
+	rt := make_default_render_target(image[:], rp)
+	render(rp, rt)
 
 	return
 }
@@ -149,12 +149,14 @@ example_gamma_test_world :: proc() -> ^World {
 	world := make_world()
 	world.skybox.sky_color = rgb(128, 178, 255)
 
+	// Even though the accompanying render helper `example_gamma_test()` replaces the material,
+	// let's still give a reasonable default for those who want to use this world setup helper directly.
 	diffuse := DiffuseMaterial{reflectance = rgb(127, 127, 127)}
 	// Object to look at
 	append(&world.scene_objects, SceneObject{shape = Sphere{radius = 0.5}, material = diffuse})
 	append(&world.transforms, Transform{1, 1, Vec3{0, 0, 0}})
 	// Ground
-    append(&world.scene_objects, SceneObject{shape = Sphere{radius = 100}, material = diffuse})
+	append(&world.scene_objects, SceneObject{shape = Sphere{radius = 100}, material = diffuse})
 	append(&world.transforms, Transform{1, 1, Vec3{0, 0, -100.5}})
 
 	return world
@@ -198,7 +200,7 @@ example_gamma_test :: proc() -> (image: [dynamic]Color, width, height: int) {
 		}
 		rt.t_x0 = i * section_width
 		rt.t_x1 = (i+1) * section_width
-		render(&rp, &rt)
+		render(rp, rt)
 	}
 
 	return

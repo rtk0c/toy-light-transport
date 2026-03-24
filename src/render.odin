@@ -197,7 +197,7 @@ RenderTarget :: struct {
 	t_x0, t_y0, t_x1, t_y1: int,
 }
 
-make_default_render_target :: proc(image: []Color, rp: ^RenderParams) -> RenderTarget {
+make_default_render_target :: proc(image: []Color, rp: RenderParams) -> RenderTarget {
 	return RenderTarget{
 		storage = image[:],
 		line_stride = rp.viewport_width,
@@ -207,8 +207,8 @@ make_default_render_target :: proc(image: []Color, rp: ^RenderParams) -> RenderT
 }
 
 render :: proc(
-	rp: ^RenderParams,
-	rt: ^RenderTarget,
+	rp: RenderParams,
+	rt: RenderTarget,
 ) {
 	cam := rp.cam
 	world := rp.world
