@@ -204,7 +204,8 @@ sample_bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3, ωo: Vec3
 	case MirrorMaterial:
 		// Reflect across the normal
 		n := Vec3(normal)
-		ωi := ωo - 2*dot(ωo, n)*n
+		r := -ωo // ray direction
+		ωi := r - 2*dot(r, n)*n
 		return material.reflectance, ωi
 	}
 

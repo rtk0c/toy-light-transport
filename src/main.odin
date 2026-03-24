@@ -13,7 +13,7 @@ main :: proc() {
 	// Use fixed RNG seed for reproducible rendering results
 	rand.reset(0x531864e09a8e25d6)
 
-	image, image_width, image_height := example_gamma_test()
+	image, image_width, image_height := example_mirror()
 
 	// Gamma correction
 	// TODO image looks right with this off, but wrong with this on?

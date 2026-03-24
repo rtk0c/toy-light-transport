@@ -85,8 +85,8 @@ example_basic :: proc() -> (image: [dynamic]Color, width, height: int) {
 
 example_mirror_camera_setup :: proc(camera: ^Camera) {
 	camera.horz_fov = 70.0 * math.RAD_PER_DEG
-	camera.pos = Vec3{-3, 0, 2}
-	camera_look_at(camera, Vec3{0, 0, 0})
+	camera.pos = Vec3{-3, 0, 0.5}
+	camera.view = Vec3{1, 0, 0}
 }
 
 example_mirror_world :: proc() -> ^World {
