@@ -141,37 +141,47 @@ integrate_random_walk :: proc(
 integrate_simple :: proc(
 	cam: ^Camera,
 	world: ^World,
-	ray: Ray,
-	remaining_bounces: int,
+	initial_ray: Ray,
+	max_bounces: int,
 ) -> Color {
-	isect := intersect_ray_with_world(cam, world, ray)
-	if isect_empty(isect) {
-		return world.skybox.sky_color
+	L: Color
+	beta: Color = 1
+	ray := initial_ray
+	remaining_bounces := max_bounces
+
+	for remaining_bounces >= 0 {
+		isect := intersect_ray_with_world(cam, world, ray)
+		if isect_empty(isect) {
+			// Handle infinite lights
+			L += beta * world.skybox.sky_color
+			break
+		}
+
+		if remaining_bounces <= 0 {
+			break
+		}
+		remaining_bounces -= 1
+
+		so := &world.scene_objects[isect.obj_id]
+		wst := world.transforms[isect.obj_id]
+
+		// Also in object space
+		hit_pt := tr_CW_to_object(isect.pt, cam, wst)
+		hit_normal := isect.normal
+
+		light_emitted := light_emitted_at(so, hit_pt, hit_normal)
+		L += beta * light_emitted
+
+		ωo := -ray.dir
+
+		s := sample_bsdf_at(so, hit_pt, hit_normal, ωo)
+		beta *= s.L
+
+		// Proceed to next bounce
+		ray = isect_spawn_ray(isect, s.ωi)
 	}
 
-	so := &world.scene_objects[isect.obj_id]
-	wst := world.transforms[isect.obj_id]
-
-	// Also in object space
-	hit_pt := tr_CW_to_object(isect.pt, cam, wst)
-	hit_normal := isect.normal
-	light_emitted := light_emitted_at(so, hit_pt, hit_normal)
-
-	if remaining_bounces <= 0 {
-		return light_emitted
-	}
-
-	ωo := -ray.dir
-
-	s := sample_bsdf_at(so, hit_pt, hit_normal, ωo)
-	if s.L == 0.0 {
-		return light_emitted
-	}
-
-	next_ray := isect_spawn_ray(isect, s.ωi)
-
-	return light_emitted +
-		s.L * integrate_simple(cam, world, next_ray, remaining_bounces - 1)
+	return L
 }
 
 RenderParams :: struct {
