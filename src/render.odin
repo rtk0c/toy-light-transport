@@ -124,6 +124,7 @@ integrate_random_walk :: proc(
 
 	// f_cos: BSDF value with pre-multiplied cos(θ) factor
 	f_cos := bsdf_at(so, hit_pt, hit_normal, ωo, ωp)
+	// We could also write `tan_sp_cosθ(o2t * ωp)`, but that would loose more precision, because the `o2t` transform is derived from `hit_normal` in the first place
 	f_cos *= /* cos(θ), angle between normal and ωp */ abs_dot(Vec3(hit_normal), ωp)
 	if f_cos == 0.0 {
 		return light_emitted
@@ -162,16 +163,15 @@ integrate_simple :: proc(
 
 	ωo := -ray.dir
 
-	fcos, ωp := sample_bsdf_at(so, hit_pt, hit_normal, ωo)
-	if fcos == 0.0 {
+	s := sample_bsdf_at(so, hit_pt, hit_normal, ωo)
+	if s.L == 0.0 {
 		return light_emitted
 	}
 
-	next_ray := isect_spawn_ray(isect, ωp)
-	light_scattered :=
-		light_emitted + fcos * integrate_simple(cam, world, next_ray, remaining_bounces - 1)
+	next_ray := isect_spawn_ray(isect, s.ωi)
 
-	return light_scattered
+	return light_emitted +
+		s.L * integrate_simple(cam, world, next_ray, remaining_bounces - 1)
 }
 
 RenderParams :: struct {

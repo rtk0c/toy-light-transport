@@ -1,3 +1,5 @@
+#+feature using-stmt
+
 // Object space.
 // World space.
 // Camera space. Origin at camera (so rays come out of 0,0), but rotation and scaling is the same as world space.
@@ -194,22 +196,55 @@ bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3, ωo, ωi: Vec3) 
 // Note that this function could also be defined in reverse: determine ωo for a given ωi,
 // but since the path tracing algorithm simulates reverse time ("light" comes out of the camera and ends at light sources),
 // it is more convenient to have it defined this way.
-sample_bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3, ωo: Vec3) -> (Color, Vec3) {
+sample_bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3, ωo: Vec3) -> BSDF_Sample {
+	o2t := matrix3_rotate_object_to_tangent(Vec3(normal))
+	t2o := linalg.inverse(o2t)
+
+	i := BSDF_Inputs{pos, normal, ωo, o2t, t2o}
+
 	switch &material in so.material {
 	case NormalDebugMaterial:
 	case PureColorMaterial:
-	case DiffuseMaterial:
-		ωi := Vec3(normal) + rand_unit_vec()
-		return material.reflectance, ωi
-	case MirrorMaterial:
-		// Reflect across the normal
-		n := Vec3(normal)
-		r := -ωo // ray direction
-		ωi := r - 2*dot(r, n)*n
-		return material.reflectance, ωi
+	case DiffuseMaterial: return diffuse_sample_bsdf_at(&material, i)
+	case MirrorMaterial: return mirror_sample_bsdf_at(&material, i)
 	}
 
-	return Color{}, Vec3{}
+	return BSDF_Sample{}
+}
+
+BSDF_Inputs :: struct {
+	pos: Point3,
+	normal: Normal3,
+	ωo: Vec3,
+
+	o2t, t2o: Mat3,
+}
+
+BSDF_Sample :: struct {
+	L: Color,
+	pdf: f32,
+	ωi: Vec3,
+}
+
+diffuse_sample_bsdf_at :: proc(m: ^DiffuseMaterial, p: BSDF_Inputs) -> (out: BSDF_Sample) {
+	using p
+	out.L = m.reflectance
+	out.ωi = Vec3(normal) + rand_unit_vec()
+	return
+}
+
+mirror_sample_bsdf_at :: proc(m: ^MirrorMaterial, p: BSDF_Inputs) -> (out: BSDF_Sample) {
+	using p
+
+	out.L = m.reflectance
+
+	// Reflect across the normal
+	n := Vec3(normal)
+	r := -ωo // ray direction
+	out.ωi = r - 2*dot(r, n)*n
+
+	out.pdf = 1
+	return
 }
 
 // Ray in object space.
