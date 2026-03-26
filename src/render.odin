@@ -175,7 +175,7 @@ integrate_simple :: proc(
 		ωo := -ray.dir
 
 		s := sample_bsdf_at(so, hit_pt, hit_normal, ωo)
-		beta *= s.L
+		beta *= s.L * abs_dot(Vec3(hit_normal), s.ωi) / s.pdf
 
 		// Proceed to next bounce
 		ray = isect_spawn_ray(isect, s.ωi)

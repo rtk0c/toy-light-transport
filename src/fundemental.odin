@@ -72,21 +72,21 @@ Vec2 :: linalg.Vector2f32
 
 // Are the vectors both above the XY plane, or both below?
 // Note that in tangent space, the normal vector is always Vec{0,0,1}.
-tan_sp_same_hemisphere :: proc(a, b: Vec3) -> bool {
+tan_sp_same_hemisphere :: proc "contextless" (a, b: Vec3) -> bool {
 	return a.z * b.z > 0
 }
 
 // Angles mentioned below are spherical coordinates. ω is a unit vector.
 // θ: angle ω makes with the normal
 // φ: angle ω makes with X axis, going counter-clockwise
-tan_sp_cosθ :: proc(ω: Vec3) -> f32 {return ω.z}
-tan_sp_cos2θ :: proc(ω: Vec3) -> f32 {return sq(ω.z)}
-tan_sp_sin2θ :: proc(ω: Vec3) -> f32 {return 1 - tan_sp_cos2θ(ω)} 	// TODO PBRT adds max(0, ...) to avoid negative caused by rounding errors
-tan_sp_sinθ :: proc(ω: Vec3) -> f32 {return sqrt(tan_sp_sin2θ(ω))}
+tan_sp_cosθ :: proc "contextless" (ω: Vec3) -> f32 {return ω.z}
+tan_sp_cos2θ :: proc "contextless" (ω: Vec3) -> f32 {return sq(ω.z)}
+tan_sp_sin2θ :: proc "contextless" (ω: Vec3) -> f32 {return 1 - tan_sp_cos2θ(ω)} 	// TODO PBRT adds max(0, ...) to avoid negative caused by rounding errors
+tan_sp_sinθ :: proc "contextless" (ω: Vec3) -> f32 {return sqrt(tan_sp_sin2θ(ω))}
 
 // Alias some commonly used functions here, to save some typing
 pow :: linalg.pow
-sq :: proc(x: $T) -> (out: T) {
+sq :: proc "contextless" (x: $T) -> (out: T) {
 	when IS_ARRAY(T) {
 		for i in 0..<len(T) {
 			out[i] = x[i] * x[i]
@@ -247,4 +247,18 @@ rand_pt_in_sphere :: proc(r: f32 = 1.0) -> Vec3 {
 
 rand_unit_vec :: proc(r: f32 = 1.0) -> Vec3 {
 	return linalg.normalize(rand_pt_in_sphere(r))
+}
+
+rand_Pz_hemisphere :: proc(r: f32 = 1.0) -> Vec3 {
+	res := rand_unit_vec(r)
+	if res.z < 0 {
+		res.z = -res.z
+	}
+	return res
+}
+
+rand_cosθ_Pz_hemisphere :: proc() -> Vec3 {
+	pt_disk := rand_pt_in_circle()
+	z := sqrt(1 - sq(pt_disk.x) - sq(pt_disk.y))
+	return Vec3{pt_disk.x, pt_disk.y, z}
 }

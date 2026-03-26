@@ -123,6 +123,8 @@ PureColorMaterial :: struct {
 }
 
 DiffuseMaterial :: struct {
+	// Technically reflectance is a dimensionless quantity.
+	// Even though reflectance is stored as a radiance, `Color`, physically reflectance is a ratio between incident and relected radiance.
 	reflectance: Color,
 }
 
@@ -228,8 +230,42 @@ BSDF_Sample :: struct {
 
 diffuse_sample_bsdf_at :: proc(m: ^DiffuseMaterial, p: BSDF_Inputs) -> (out: BSDF_Sample) {
 	using p
-	out.L = m.reflectance
-	out.ωi = Vec3(normal) + rand_unit_vec()
+
+	// Let \(R\) be the reflectance of this surface, unit in radiance.
+	//
+	// Consider the rendering equation (note simplified notation here): \( L_o(ω_o) = \int_{Ω} f(...) L_i(ω_i) \cosθ \,dω_i \)
+	// where
+	// - \(Ω\) just denotes the hemisphere
+	// - \( f(...) \) is the BRDF
+	// - \(L_o(ω_o)\) is reflected radiance in a particular direction \(ω_o\). Note that in standard notation there are more parameters, I'm omitting them to be concise.
+	// - \(L_i(ω_i)\) is similarly incident radiance.
+	// - \(L_i\) is the *total* incident radiance, i.e. \( \int_{Ω} L_i(ω_i) \,dω_i \)
+	// - \(L_o\) similarly.
+	//
+	// Conservation of energy says that total reflected radiance cannot be more than the total incident radiance:
+	// \(L_o ≤ L_i\) must hold in all cases.
+	//
+	// If we simply follow the lambertian reflection definition and define the BRDF as \( f(...) = R \), where \(R\) is the reflectance of the surface,
+	// then expanding the rendering equation by integrating over spherical coordinates, we get:
+	//
+	// \( L_o(ω_o) = \int_0^{2\pi} \int_0^{\pi/2} \underline{ L_i(θ, ϕ) R \cosθ } \sinθ \,dθ \,dϕ = π L_i R \)
+	//
+	// (integrand underlined; \(\sinθ\) is introduced by the spherical coordinate conversion)
+	//
+	// I don't know how to actually integrate this full integral (lol), but taking the trig functions out, it does check out: \( \int_0^{2\pi} \int_0^{\pi/2} \cosθ \sinθ \,dθ \,dϕ = π \)
+	//
+	// Reflectance R is a ratio, so R < 1, but π = 3.14... > 1, which makes the product of all 3 things bigger than L_i.
+	// Energy is not conserved!
+	//
+	// Thus, we need to divide the π out by adding a constant into the BRDF, so \( f(...) = \frac{R}{π} \)
+	out.L = m.reflectance / math.PI
+
+	t_ωi := rand_cosθ_Pz_hemisphere()
+	out.ωi = p.t2o * t_ωi
+
+	// Literally the lambertian cosine law. Probability that a ray is reflected in a direction is proportional to cosθ the ray makes with the len(normal)
+	// Inserting a 1/π factor so the total probability comes out to 1, for the same reasoning as above.
+	out.pdf = abs(tan_sp_cosθ(t_ωi)) / math.PI
 	return
 }
 
