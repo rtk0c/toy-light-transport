@@ -252,7 +252,9 @@ diffuse_sample_bsdf_at :: proc(m: ^DiffuseMaterial, p: BSDF_Inputs) -> (out: BSD
 	//
 	// (integrand underlined; \(\sinθ\) is introduced by the spherical coordinate conversion)
 	//
-	// I don't know how to actually integrate this full integral (lol), but taking the trig functions out, it does check out: \( \int_0^{2\pi} \int_0^{\pi/2} \cosθ \sinθ \,dθ \,dϕ = π \)
+	// https://www.rorydriscoll.com/2009/01/25/energy-conservation-in-games/
+	// Both \(L_i\) and \(R\) are constants with respect to the integral, so we can pull them out.
+	// Looing only at the trig functions then, you can just put this integral in any CAS, and the result is indeed π.
 	//
 	// Reflectance R is a ratio, so R < 1, but π = 3.14... > 1, which makes the product of all 3 things bigger than L_i.
 	// Energy is not conserved!
