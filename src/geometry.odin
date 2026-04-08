@@ -319,13 +319,11 @@ sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> f32 {
 		return r1
 	}
 
-	// Only take intersections a significant distance away, to prevent self-intersections after a ray reflection
-	THRESHOLD :: 0.001
 	// Take the smaller root, that's the closer hit
 	// Both positive roots, take lefter/smaller one (sphere fully in front of ray)
-	if r1 > THRESHOLD do return r1
+	if r1 > 0 do return r1
 	// One negative, one positive root (ray origin inside sphere)
-	if r1 < 0 && r2 > THRESHOLD do return r2
+	if r1 < 0 && r2 > 0 do return r2
 	return math.nan_f32()
 }
 

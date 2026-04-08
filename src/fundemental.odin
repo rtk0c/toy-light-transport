@@ -35,11 +35,14 @@ matrix3_rotate_object_to_tangent :: proc "contextless" (surface_normal: Vec3) ->
 		return matrix3_rotate_from_to(surface_normal, UP)
 	} else {
 		perp := cross(surface_normal, UP)
+		// If surface normal is perfectly perpendicular, no need to apply transform
 		if length(perp) == 0 {
 			return linalg.identity_matrix(Mat3)
 		}
-		perp = normalize(perp)
-		angle := math.acos(dot(surface_normal, UP) / (length(surface_normal) * length(UP)))
+
+		angle := math.acos(dot(surface_normal, UP) / length(surface_normal))
+
+		// NOTE: matrix3_rotate normalizes perp already, so we don't have to do it
 		return linalg.matrix3_rotate(angle, perp)
 	}
 }

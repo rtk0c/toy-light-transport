@@ -60,11 +60,13 @@ isect_empty :: proc(isect: Intersection) -> bool {
 	return isect.obj_id == -1
 }
 
-// Generate new ray, relative to the tip of surface normal at intersection.
+// Generate new ray at the point of intersection.
 // Returned Ray in camera-world space.
 isect_spawn_ray :: proc(isect: Intersection, v: Vec3) -> Ray {
-	n := Vec3(isect.normal)
-	return Ray{origin = isect.pt + Point3(0.001 * n), dir = v}
+	// Offset slightly to avoid clipping into the same surface again
+	// TODO do the PBRT-v4 thing of picking the next float to minimize errors
+	OFFSET :: 0.001
+	return Ray{origin = isect.pt + Point3(OFFSET * isect.normal), dir = v}
 }
 
 intersect_ray_with_world :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Intersection {
