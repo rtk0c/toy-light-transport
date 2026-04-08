@@ -64,7 +64,7 @@ isect_empty :: proc(isect: Intersection) -> bool {
 // Returned Ray in camera-world space.
 isect_spawn_ray :: proc(isect: Intersection, v: Vec3) -> Ray {
 	n := Vec3(isect.normal)
-	return Ray{origin = isect.pt, dir = n + v}
+	return Ray{origin = isect.pt + Point3(0.001 * n), dir = v}
 }
 
 intersect_ray_with_world :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Intersection {
