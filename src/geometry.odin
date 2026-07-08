@@ -135,6 +135,7 @@ MirrorMaterial :: struct {
 SceneObject :: struct {
 	shape:    union {
 		Sphere,
+		TriangleMesh,
 	},
 	material: union {
 		NormalDebugMaterial,
@@ -149,6 +150,8 @@ surface_normal_at :: proc(so: ^SceneObject, pos: Point3) -> Normal3 {
 	switch &shape in so.shape {
 	case Sphere:
 		return sphere_surface_normal_at(&shape, pos)
+	case TriangleMesh:
+		return Normal3{} // TODO
 	}
 
 	return Normal3{}
@@ -285,14 +288,21 @@ mirror_sample_bsdf_at :: proc(m: ^MirrorMaterial, p: BSDF_Inputs) -> (out: BSDF_
 	return
 }
 
-// Ray in object space.
-ray_hits :: proc(ray: Ray, so: ^SceneObject) -> f32 {
+// Compute whether the ray intersects with the surface at some forward point.
+//
+// "Forward" meaning that returned t is either positive, giving the exact hit point at ray(t), or NaN indicating no hit.
+// If no hit, returned front_or_back is meaningless.
+//
+// ray: Ray in object space.
+ray_hits :: proc(ray: Ray, so: ^SceneObject) -> (t: f32, front_or_back: bool) {
 	switch &shape in so.shape {
 	case Sphere:
 		return sphere_ray_hits(ray, &shape)
+	case TriangleMesh:
+		return triangle_mesh_ray_hits(ray, &shape)
 	}
 
-	return math.nan_f32()
+	return math.nan_f32(), false
 }
 
 Sphere :: struct {
@@ -303,7 +313,8 @@ sphere_surface_normal_at :: proc(sphere: ^Sphere, pt: Point3) -> Normal3 {
 	return Normal3(normalize(pt))
 }
 
-sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> f32 {
+// front_or_back: Front face meaning hit outside the sphere, back face meaning hit inside the sphere
+sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> (t: f32, front_or_back: bool) {
 	ro := Vec3(ray.origin)
 	rd := ray.dir
 
@@ -316,16 +327,85 @@ sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> f32 {
 	// Doesn't hit
 	// NaN is produced by the sqrt. If one of the roots is NaN, the other must also be.
 	if math.is_nan(r1) {
-		return r1
+		return r1, false
 	}
 
 	// Take the smaller root, that's the closer hit
 	// Both positive roots, take lefter/smaller one (sphere fully in front of ray)
-	if r1 > 0 do return r1
+	if r1 > 0 do return r1, true
 	// One negative, one positive root (ray origin inside sphere)
-	if r1 < 0 && r2 > 0 do return r2
-	return math.nan_f32()
+	if r1 < 0 && r2 > 0 do return r2, false
+	return math.nan_f32(), false
 }
+
+
+// Plane is a bit special: depending on the operation, it's easier to use different storage formats, so there is no offical Plane struct.
+// Instead each function takes the most convenient representation of a plane.
+//
+// Note that for a plane defined by the implicit equation Ax + By + Cz + D = 0,
+// it can immediately be reinterpreted as normal-D form, with N = <A,B,C> and D being the 4th coeffcient as-is.
+
+
+// Convert a plane from normal-point form to implicit/normal-D form.
+plane_normal_point_to_implicit :: proc(normal: Normal3, pt: Point3) -> (d: f32) {
+	normal := Vec3(normal)
+	pt := Vec3(pt)
+
+	return -dot(normal, pt)
+}
+
+plane_implicit_to_normal_point :: proc(normal: Normal3, d: f32) -> (pt: Point3) {
+	// TODO
+	unimplemented()
+}
+
+// This function does NOT obey the ray-surface intersection contract where the return t is always positive or NaN.
+// Here, NaN only indicates ray is parallel to the plane. Negative t indiactes ray is pointing towards infinity.
+//
+// normal: normal of the plane, its direction defines the front side of the plane.
+// d: the constant coeffcient in the implicit equation Ax + By + Cz + D = 0 of this plane.
+plane_solve_ray_hit :: proc(ray: Ray, normal: Normal3, d: f32) -> (t: f32) {
+	ddot := dot(ray.dir, Vec3(normal))
+	// Ray direction always perpendicular to plane normal, the ray is parallel to the plane. Reject it.
+	if ddot < EPSILON {
+		return math.nan_f32()
+	}
+
+	odot := dot(ray.origin, Point3(normal))
+
+	t = (d - odot) / ddot
+	return
+}
+
+plane_ray_hits :: proc(ray: Ray, normal: Normal3, d: f32) -> (f32, bool) {
+	t := plane_solve_ray_hit(ray, normal, d)
+	front_or_back := false // TODO
+	// If t is NaN, comparision gives false, we return NaN still.
+	if t < 0 {
+		return math.nan_f32(), front_or_back
+	} else {
+		return t, front_or_back
+	}
+}
+
+
+TriangleMesh :: struct {
+	num_indices:  uint,
+	num_vertices: uint,
+	// Use u16 indices to save some memory. I don't anticiate this path tracer is going to handle scenes that big anyways
+	indices:      [^]u16,
+	// Vertices. By "optional", we mean the dynamic array may be nil.
+	pos:          [^]Point3,
+	normal:       [^]Normal3, // optional
+	texcoord:     [^]Point2, // optional
+	color:        [^]Color, // optional
+}
+
+triangle_mesh_ray_hits :: proc(ray: Ray, mesh: ^TriangleMesh) -> (t: f32, front_or_back: bool) {
+	// TODO
+	unimplemented()
+}
+
 
 SkyBox :: struct {
 	sky_color: Color,

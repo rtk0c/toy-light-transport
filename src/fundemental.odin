@@ -12,6 +12,9 @@ IS_FLOAT :: intrinsics.type_is_float
 BASE_TYPE :: intrinsics.type_base_type
 ELEM_TYPE :: intrinsics.type_elem_type
 
+// Epsilon value for our math types precision, which is f32 right now. (and probably forever)
+EPSILON :: linalg.F32_EPSILON
+
 // Solve the quadratic equation ax^2 + bx + c for Reals x_1, x_2.
 // If there are two distinct real solutions, x_1 < x_2.
 solve_quadratic_real :: proc(a, b, c: f32) -> (f32, f32) {
