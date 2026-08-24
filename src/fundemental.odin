@@ -5,6 +5,8 @@ import "core:math"
 import "core:math/linalg"
 import "core:math/rand"
 
+// MARK: LinAlg, Geom
+
 IS_NUMERIC :: intrinsics.type_is_numeric
 IS_QUATERNION :: intrinsics.type_is_quaternion
 IS_ARRAY :: intrinsics.type_is_array
@@ -119,6 +121,65 @@ Point2 :: distinct Vec2
 
 Normal3 :: distinct Vec3
 
+// Contract: so long as you use these set of functions to manipulate AABBs (i.e. do not mutate or construct AABBs yourself)
+// all AABBs adhere to the invariants
+// - min.{x,y,z} ≤ max.{x,y,z}
+//
+// This is an inclusive-inclusive AABB.
+// (I think that has to be the case, since we're using floats. AFIAK there is no way to do well-defined open-closed intervals?)
+AABB :: struct {
+	min: Vec3,
+	max: Vec3,
+}
+
+// In case you're constructing one yourself
+is_aabb_valid :: proc(aabb: AABB) -> bool {
+	return aabb.min.x <= aabb.max.x && aabb.min.y <= aabb.max.y && aabb.min.z <= aabb.max.z
+}
+
+make_aabb :: proc(p1, p2: Vec3) -> AABB {
+	return aabb_union(AABB{p1, p1}, AABB{p2, p2})
+}
+
+aabb_union :: proc(a, b: AABB) -> AABB {
+	return AABB{
+		min = Vec3{min(a.min.x, b.min.x), min(a.min.y, b.min.y), min(a.min.z, b.min.z)},
+		max = Vec3{max(a.max.x, b.max.x), max(a.max.y, b.max.y), max(a.max.z, b.max.z)},
+	}
+}
+
+aabb_intersection :: proc(a, b: AABB) -> AABB {
+	tmp := AABB{
+		min = Vec3{max(a.min.x, b.min.x), max(a.min.y, b.min.y), max(a.min.z, b.min.z)},
+		max = Vec3{min(a.max.x, b.max.x), min(a.max.y, b.max.y), min(a.max.z, b.max.z)},
+	}
+	return is_aabb_valid(tmp) ? tmp : AABB{}
+}
+
+half_aabb_ray_intersection :: proc(pt: Vec3, ray: Ray, is_aabb_max: bool) -> (t: f32) {
+	// Suppose is_aabb_max=false, i.e. looking at AABB.max
+	// Then, the ray intersects the infinite rectangular prism if ∃t. ∀{x,y,z}. ray(t) ≥ pt
+	t_x := (pt.x - ray.origin.x) / ray.dir.x
+	t_y := (pt.y - ray.origin.y) / ray.dir.y
+	t_z := (pt.z - ray.origin.z) / ray.dir.z
+	return is_aabb_max ? min(t_x, t_y, t_z) : max(t_x, t_y, t_z)
+}
+
+aabb_ray_hit :: proc(aabb: AABB, ray: Ray) -> (t: f32) {
+	min_half := half_aabb_ray_intersection(aabb.min, ray, false)
+	max_half := half_aabb_ray_intersection(aabb.max, ray, true)
+	if min_half >= 0 && max_half >= 0 {
+		// After a t0 where ray(t0) intersects a half AABB, for all t >= t0 it's still inside.
+		// So, we pick whichever half AABB the ray hits later as the point where it actually hit the full AABB.
+		return max(min_half, max_half)
+	} else {
+		return f32.nan()
+	}
+}
+
+
+// MARK: Color
+
 // RGBA
 Color :: distinct [4]f32
 
@@ -215,6 +276,8 @@ colorize_normal_vec :: proc "contextless" (n: Normal3) -> Color {
 	r := 0.5 * (n + Normal3{1, 1, 1}) //r for remapped
 	return Color{r.x, r.y, r.z, 1.0}
 }
+
+// MARK: Random
 
 rand_vec2 :: proc(min, max: f32) -> Vec2 {
 	return Vec2{rand.float32_uniform(min, max), rand.float32_uniform(min, max)}
