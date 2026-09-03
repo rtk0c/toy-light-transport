@@ -80,7 +80,10 @@ intersect_ray_with_world :: proc(cam: ^Camera, world: ^World, ray: Ray) -> Inter
 
 		ray_obj_space := ray_tr_CW_to_object(ray, cam, wst)
 		// ray-object hit test happens in object space, because it's easier to treat in the geometry code
-		t := ray_hits(ray_obj_space, so)
+		t, front_or_back := ray_hits(ray_obj_space, so)
+		if front_or_back == Facing.Back {
+			continue
+		}
 
 		if !math.is_nan(t) && t < isect.t {
 			isect.obj_id = i

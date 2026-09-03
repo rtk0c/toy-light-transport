@@ -288,13 +288,18 @@ mirror_sample_bsdf_at :: proc(m: ^MirrorMaterial, p: BSDF_Inputs) -> (out: BSDF_
 	return
 }
 
+Facing :: enum {
+	Front,
+	Back
+}
+
 // Compute whether the ray intersects with the surface at some forward point.
 //
 // "Forward" meaning that returned t is either positive, giving the exact hit point at ray(t), or NaN indicating no hit.
 // If no hit, returned front_or_back is meaningless.
 //
 // ray: Ray in object space.
-ray_hits :: proc(ray: Ray, so: ^SceneObject) -> (t: f32, front_or_back: bool) {
+ray_hits :: proc(ray: Ray, so: ^SceneObject) -> (t: f32, front_or_back: Facing) {
 	switch &shape in so.shape {
 	case Sphere:
 		return sphere_ray_hits(ray, &shape)
@@ -302,7 +307,7 @@ ray_hits :: proc(ray: Ray, so: ^SceneObject) -> (t: f32, front_or_back: bool) {
 		return triangle_mesh_ray_hits(ray, &shape)
 	}
 
-	return math.nan_f32(), false
+	return math.nan_f32(), Facing.Back
 }
 
 Sphere :: struct {
@@ -314,7 +319,7 @@ sphere_surface_normal_at :: proc(sphere: ^Sphere, pt: Point3) -> Normal3 {
 }
 
 // front_or_back: Front face meaning hit outside the sphere, back face meaning hit inside the sphere
-sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> (t: f32, front_or_back: bool) {
+sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> (t: f32, front_or_back: Facing) {
 	ro := Vec3(ray.origin)
 	rd := ray.dir
 
@@ -327,15 +332,15 @@ sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> (t: f32, front_or_back: bo
 	// Doesn't hit
 	// NaN is produced by the sqrt. If one of the roots is NaN, the other must also be.
 	if math.is_nan(r1) {
-		return r1, false
+		return r1, Facing.Back
 	}
 
 	// Take the smaller root, that's the closer hit
 	// Both positive roots, take lefter/smaller one (sphere fully in front of ray)
-	if r1 > 0 do return r1, true
+	if r1 > 0 do return r1, Facing.Front
 	// One negative, one positive root (ray origin inside sphere)
-	if r1 < 0 && r2 > 0 do return r2, false
-	return math.nan_f32(), false
+	if r1 < 0 && r2 > 0 do return r2, Facing.Back
+	return math.nan_f32(), Facing.Back
 }
 
 
@@ -377,9 +382,9 @@ plane_solve_ray_hit :: proc(ray: Ray, normal: Normal3, d: f32) -> (t: f32) {
 	return
 }
 
-plane_ray_hits :: proc(ray: Ray, normal: Normal3, d: f32) -> (f32, bool) {
+plane_ray_hits :: proc(ray: Ray, normal: Normal3, d: f32) -> (f32, Facing) {
 	t := plane_solve_ray_hit(ray, normal, d)
-	front_or_back := false // TODO
+	front_or_back := Facing.Back // TODO
 	// If t is NaN, comparision gives false, we return NaN still.
 	if t < 0 {
 		return math.nan_f32(), front_or_back
@@ -401,7 +406,7 @@ TriangleMesh :: struct {
 	color:        [^]Color, // optional
 }
 
-triangle_mesh_ray_hits :: proc(ray: Ray, mesh: ^TriangleMesh) -> (t: f32, front_or_back: bool) {
+triangle_mesh_ray_hits :: proc(ray: Ray, mesh: ^TriangleMesh) -> (t: f32, front_or_back: Facing) {
 	// TODO
 	unimplemented()
 }
