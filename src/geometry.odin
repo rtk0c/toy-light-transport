@@ -17,6 +17,9 @@ import "core:fmt"
 import "core:math"
 import "core:math/linalg"
 
+
+// MARK: Transform
+
 Transform :: struct {
 	// Rotation and scaling SO(3)
 	SO3, SO3_inv: Mat3,
@@ -82,6 +85,8 @@ tr_object_to_CW :: proc "contextless" (v: $T, cam: ^Camera, wst: Transform) -> T
 	return forward_tr(v, wst)
 }
 
+// MARK: Ray
+
 // A ray modeled by equation \( P(t) = x_0 + dt \)
 // where \(x_0\) is `origin`, \(d\) is `dir`.
 Ray :: struct {
@@ -102,6 +107,44 @@ ray_tr_object_to_CW :: proc(ray: Ray, cam: ^Camera, wst: Transform) -> Ray {
 	return Ray{tr_object_to_CW(ray.origin, cam, wst), tr_object_to_CW(ray.dir, cam, wst)}
 	// return Ray{tr_object_to_CW(ray.origin, cam, wst), ray.dir}
 }
+
+slab_ray_hits :: proc(ray: Ray, axis: int, thickness: f32) -> bool {
+	return (ray.origin[axis] > thickness && ray.dir[axis] < 0) ||
+		(ray.origin[axis] < -thickness && ray.dir[axis] > 0)
+}
+
+aabb_ray_hits :: proc(ray: Ray, aabb: AABB) -> bool {
+	aabb000 := aabb_translate_to(aabb, Vec3{0, 0, 0})
+	offset := aabb000.min - aabb.min
+	ray000 := Ray{ray.origin - Point3(offset), ray.dir}
+	return slab_ray_hits(ray000, X_AXIS, aabb_extent(aabb000, X_AXIS) / 2) &&
+		slab_ray_hits(ray000, Y_AXIS, aabb_extent(aabb000, Y_AXIS) / 2) &&
+		slab_ray_hits(ray000, Z_AXIS, aabb_extent(aabb000, Z_AXIS) / 2)
+}
+
+Facing :: enum {
+	Front, // or outside
+	Back // or inside
+}
+
+// Compute whether the ray intersects with the surface at some forward point.
+//
+// "Forward" meaning that returned t is either positive, giving the exact hit point at ray(t), or NaN indicating no hit.
+// If no hit, returned front_or_back is meaningless.
+//
+// ray: Ray in object space.
+ray_hits :: proc(ray: Ray, so: ^SceneObject) -> (t: f32, front_or_back: Facing) {
+	switch &shape in so.shape {
+	case Sphere:
+		return sphere_ray_hits(ray, &shape)
+	case TriangleMesh:
+		return triangle_mesh_ray_hits(ray, &shape)
+	}
+
+	return math.nan_f32(), Facing.Back
+}
+
+// MARK: SceneObject
 
 // Discussion of entity storage
 // ============================
@@ -168,6 +211,8 @@ light_emitted_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3) -> Colo
 	}
 	return Color{}
 }
+
+// MARK: BSDF
 
 // Position, normal, and in/out directions in object space.
 bsdf_at :: proc(so: ^SceneObject, pos: Point3, normal: Normal3, ωo, ωi: Vec3) -> Color {
@@ -288,27 +333,7 @@ mirror_sample_bsdf_at :: proc(m: ^MirrorMaterial, p: BSDF_Inputs) -> (out: BSDF_
 	return
 }
 
-Facing :: enum {
-	Front,
-	Back
-}
-
-// Compute whether the ray intersects with the surface at some forward point.
-//
-// "Forward" meaning that returned t is either positive, giving the exact hit point at ray(t), or NaN indicating no hit.
-// If no hit, returned front_or_back is meaningless.
-//
-// ray: Ray in object space.
-ray_hits :: proc(ray: Ray, so: ^SceneObject) -> (t: f32, front_or_back: Facing) {
-	switch &shape in so.shape {
-	case Sphere:
-		return sphere_ray_hits(ray, &shape)
-	case TriangleMesh:
-		return triangle_mesh_ray_hits(ray, &shape)
-	}
-
-	return math.nan_f32(), Facing.Back
-}
+// MARK: Sphere
 
 Sphere :: struct {
 	radius: f32,
@@ -343,6 +368,8 @@ sphere_ray_hits :: proc(ray: Ray, sphere: ^Sphere) -> (t: f32, front_or_back: Fa
 	return math.nan_f32(), Facing.Back
 }
 
+
+// MARK: Plane
 
 // Plane is a bit special: depending on the operation, it's easier to use different storage formats, so there is no offical Plane struct.
 // Instead each function takes the most convenient representation of a plane.
@@ -394,6 +421,8 @@ plane_ray_hits :: proc(ray: Ray, normal: Normal3, d: f32) -> (f32, Facing) {
 }
 
 
+// MARK: Tri Mesh
+
 TriangleMesh :: struct {
 	num_indices:  uint,
 	num_vertices: uint,
@@ -411,6 +440,8 @@ triangle_mesh_ray_hits :: proc(ray: Ray, mesh: ^TriangleMesh) -> (t: f32, front_
 	unimplemented()
 }
 
+
+// MARK: World
 
 SkyBox :: struct {
 	sky_color: Color,
